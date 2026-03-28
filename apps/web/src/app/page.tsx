@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 
+import { AgentCustomize } from "@/components/landing/agent-customize";
 import { AgentResult } from "@/components/landing/agent-result";
 import { AgentWorking } from "@/components/landing/agent-working";
 import { Hero } from "@/components/landing/hero";
 
-export type AppState = "idle" | "working" | "done";
+export type AppState = "idle" | "working" | "done" | "customize";
 
 export default function Home() {
   const [state, setState] = useState<AppState>("idle");
@@ -22,9 +23,11 @@ export default function Home() {
     }, 4000);
   };
 
-  const handleReset = () => {
-    setState("idle");
-    setPrompt("");
+  const handleRebuild = () => {
+    setState("working");
+    setTimeout(() => {
+      setState("done");
+    }, 4000);
   };
 
   return (
@@ -32,7 +35,14 @@ export default function Home() {
       {state === "idle" && <Hero onSubmit={handleSubmit} />}
       {state === "working" && <AgentWorking prompt={prompt} />}
       {state === "done" && (
-        <AgentResult prompt={prompt} onReset={handleReset} />
+        <AgentResult
+          prompt={prompt}
+          onRebuild={handleRebuild}
+          onCustomize={() => setState("customize")}
+        />
+      )}
+      {state === "customize" && (
+        <AgentCustomize prompt={prompt} onBack={() => setState("done")} />
       )}
     </main>
   );
