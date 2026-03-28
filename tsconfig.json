@@ -1,0 +1,3 @@
+{
+  "extends": "@crabfold/config/tsconfig.base.json"
+}

@@ -1,0 +1,24 @@
+{
+  "name": "@crabfold/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@crabfold/db": "workspace:*",
+    "@crabfold/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@crabfold/config": "workspace:*",
+    "typescript": "^5"
+  }
+}
