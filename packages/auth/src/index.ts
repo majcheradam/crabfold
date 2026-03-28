@@ -28,6 +28,12 @@ export function createAuth() {
         clientId: env.GITHUB_CLIENT_ID,
         clientSecret: env.GITHUB_CLIENT_SECRET,
       },
+      railway: {
+        clientId: env.RAILWAY_CLIENT_ID,
+        clientSecret: env.RAILWAY_CLIENT_SECRET,
+        prompt: "consent",
+        scope: ["offline_access"],
+      },
     },
     trustedOrigins: [env.CORS_ORIGIN],
   });

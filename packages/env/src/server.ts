@@ -15,5 +15,7 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "production", "test"])
       .default("development"),
+    RAILWAY_CLIENT_ID: z.string().min(1),
+    RAILWAY_CLIENT_SECRET: z.string().min(1),
   },
 });
