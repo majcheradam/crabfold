@@ -11,6 +11,7 @@ import { useVoiceInput } from "@/hooks/use-voice-input";
 
 const TEMPLATES = [
   {
+    comingSoon: false,
     description:
       "Full-featured agent framework with Gateway, Brain, Memory, Skills, and Heartbeat architecture.",
     features: ["ReAct loop", "50+ channels", "Skill marketplace"],
@@ -20,13 +21,24 @@ const TEMPLATES = [
     prompt: "A full-featured autonomous agent using the OpenClaw framework",
   },
   {
+    comingSoon: true,
+    description:
+      "Complex multi-step agents with database-backed threads and persistent state management.",
+    features: ["DB-backed threads", "Multi-step workflows", "Postgres state"],
+    framework: "ironclaw" as const,
+    image: "/ironclaw.png",
+    name: "IronClaw",
+    prompt: "",
+  },
+  {
+    comingSoon: true,
     description:
       "Lightweight fork for single-purpose agents with minimal resource footprint.",
     features: ["< 50MB image", "Fast cold start", "Edge deploy"],
     framework: "nanobot" as const,
     image: "/nanobot.png",
     name: "Nanobot",
-    prompt: "A lightweight single-purpose agent using the Nanobot framework",
+    prompt: "",
   },
 ];
 
@@ -141,14 +153,20 @@ export default function Home() {
             <span className="text-lg font-semibold text-foreground">
               Start with a template
             </span>
-            <div className="grid w-full gap-4 sm:grid-cols-2">
+            <div className="grid w-full gap-4 sm:grid-cols-3">
               {TEMPLATES.map((tpl) => (
                 <button
                   key={tpl.framework}
                   type="button"
-                  onClick={() => handleSubmit(tpl.prompt)}
-                  className="group flex flex-col overflow-hidden border border-border text-left transition-colors hover:border-foreground/20"
+                  onClick={() => !tpl.comingSoon && handleSubmit(tpl.prompt)}
+                  disabled={tpl.comingSoon}
+                  className={`group relative flex flex-col overflow-hidden border border-border text-left transition-colors ${tpl.comingSoon ? "cursor-not-allowed opacity-50" : "hover:border-foreground/20"}`}
                 >
+                  {tpl.comingSoon && (
+                    <span className="absolute top-3 right-3 z-10 border border-border bg-background px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                      Coming soon
+                    </span>
+                  )}
                   <div className="h-48 w-full shrink-0 bg-muted">
                     <img
                       src={tpl.image}
