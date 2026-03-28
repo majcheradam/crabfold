@@ -26,7 +26,6 @@ interface DeployClientProps {
   agentId: string | null;
   username: string;
   agentSlug: string;
-  autoRetry: boolean;
   connections: { railway: boolean; github: boolean };
 }
 
@@ -106,13 +105,11 @@ export function DeployClient({
   agentId,
   username,
   agentSlug,
-  autoRetry,
   connections,
 }: DeployClientProps) {
+  const canAutoDeploy = !!agentId && connections.railway && connections.github;
   const [state, setState] = useState<DeployState>(
-    autoRetry && agentId && connections.railway && connections.github
-      ? { status: "deploying" }
-      : { status: "idle" }
+    canAutoDeploy ? { status: "deploying" } : { status: "idle" }
   );
   const [events, setEvents] = useState<DeployEvent[]>([]);
   const deployStarted = useRef(false);
@@ -204,14 +201,8 @@ export function DeployClient({
     });
   }
 
-  // Auto-deploy after Railway OAuth callback
-  if (
-    autoRetry &&
-    agentId &&
-    connections.railway &&
-    connections.github &&
-    !deployStarted.current
-  ) {
+  // Auto-deploy when connections are ready
+  if (canAutoDeploy && !deployStarted.current) {
     deployStarted.current = true;
     startDeploy(agentId);
   }

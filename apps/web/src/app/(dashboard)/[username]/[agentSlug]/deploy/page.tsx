@@ -32,13 +32,10 @@ async function checkConnections(agentId: string): Promise<{
 
 export default async function DeployPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ username: string; agentSlug: string }>;
-  searchParams: Promise<{ autoRetry?: string }>;
 }) {
   const { username, agentSlug } = await params;
-  const { autoRetry } = await searchParams;
   const session = await getSession();
 
   if (!session?.user) {
@@ -56,7 +53,6 @@ export default async function DeployPage({
       agentId={agentId}
       username={username}
       agentSlug={agentSlug}
-      autoRetry={autoRetry === "true"}
       connections={connections}
     />
   );
