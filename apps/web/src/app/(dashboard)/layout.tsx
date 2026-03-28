@@ -31,9 +31,16 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
-  const user = session?.user ?? null;
-  const agents = user ? await fetchSidebarAgents(user.id) : [];
+  let user = null;
+  let agents: SidebarAgent[] = [];
+
+  try {
+    const session = await getSession();
+    user = session?.user ?? null;
+    agents = user ? await fetchSidebarAgents(user.id) : [];
+  } catch {
+    // Backend unavailable — render with empty state
+  }
 
   return (
     <SidebarProvider>

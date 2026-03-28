@@ -17,26 +17,30 @@ interface Session {
 }
 
 export async function getSession(): Promise<Session | null> {
-  const cookieStore = await cookies();
+  try {
+    const cookieStore = await cookies();
 
-  const res = await fetch(
-    `${env.NEXT_PUBLIC_SERVER_URL}/api/auth/get-session`,
-    {
-      cache: "no-store",
-      headers: {
-        cookie: cookieStore.toString(),
-      },
+    const res = await fetch(
+      `${env.NEXT_PUBLIC_SERVER_URL}/api/auth/get-session`,
+      {
+        cache: "no-store",
+        headers: {
+          cookie: cookieStore.toString(),
+        },
+      }
+    );
+
+    if (!res.ok) {
+      return null;
     }
-  );
 
-  if (!res.ok) {
+    const data = await res.json();
+    if (!data?.user) {
+      return null;
+    }
+
+    return data as Session;
+  } catch {
     return null;
   }
-
-  const data = await res.json();
-  if (!data?.user) {
-    return null;
-  }
-
-  return data as Session;
 }

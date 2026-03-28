@@ -16,7 +16,7 @@ export function WorkspaceTile({
   const current = files.find((f) => f.name === activeFile);
 
   return (
-    <div className="flex flex-col border border-border">
+    <div className="flex min-w-0 flex-col overflow-hidden border border-border">
       {/* Header */}
       <div className="border-b border-border px-4 py-3">
         <h3 className="text-sm font-medium text-foreground">Workspace Files</h3>
@@ -48,7 +48,7 @@ export function WorkspaceTile({
 
       {/* File content */}
       {current && (
-        <div className="relative">
+        <div className="relative min-w-0 overflow-hidden">
           {editing ? (
             <textarea
               value={current.content}
@@ -57,7 +57,7 @@ export function WorkspaceTile({
               className="min-h-[280px] w-full resize-y bg-transparent p-4 font-mono text-xs leading-relaxed text-foreground outline-none"
             />
           ) : (
-            <pre className="min-h-[280px] overflow-x-auto p-4 font-mono text-xs leading-relaxed text-muted-foreground">
+            <pre className="min-h-[280px] max-w-full overflow-x-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-muted-foreground">
               {current.content}
             </pre>
           )}
