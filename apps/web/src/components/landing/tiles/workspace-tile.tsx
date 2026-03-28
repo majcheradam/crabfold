@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import type { WorkspaceFile } from "@/components/landing/agent-customize";
+import type { WorkspaceFile } from "@/lib/types";
 
 export function WorkspaceTile({
   files,

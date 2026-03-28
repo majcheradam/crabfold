@@ -2,7 +2,7 @@
 
 import { Check } from "lucide-react";
 
-import type { Framework } from "@/components/landing/agent-customize";
+import type { Framework } from "@/lib/types";
 
 const FRAMEWORKS: {
   id: Framework;

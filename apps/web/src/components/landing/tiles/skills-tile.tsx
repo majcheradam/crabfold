@@ -1,6 +1,6 @@
 "use client";
 
-import type { Skill } from "@/components/landing/agent-customize";
+import type { Skill } from "@/lib/types";
 
 export function SkillsTile({
   skills,

@@ -1,6 +1,7 @@
 "use client";
 
 import { Toaster } from "@crabfold/ui/components/sonner";
+import { TooltipProvider } from "@crabfold/ui/components/tooltip";
 
 import { ThemeProvider } from "./theme-provider";
 
@@ -12,8 +13,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       enableSystem
       disableTransitionOnChange
     >
-      {children}
-      <Toaster richColors />
+      <TooltipProvider>
+        {children}
+        <Toaster richColors />
+      </TooltipProvider>
     </ThemeProvider>
   );
 }

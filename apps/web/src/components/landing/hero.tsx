@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@crabfold/ui/components/button";
-import { ArrowRight, Terminal } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 
 const EXAMPLES = [
@@ -24,24 +24,12 @@ export function Hero({ onSubmit }: { onSubmit: (value: string) => void }) {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center px-4">
       <div className="flex w-full max-w-2xl flex-col items-center gap-12">
-        {/* Logo + tagline */}
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Terminal className="size-4" />
-            <span className="text-xs font-medium uppercase tracking-widest">
-              crabfold
-            </span>
-          </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Describe your agent.
-            <br />
-            <span className="text-muted-foreground">We&apos;ll build it.</span>
-          </h1>
-          <p className="max-w-md text-sm text-muted-foreground">
-            One prompt to scaffold, configure, and deploy autonomous AI agents.
-            No code required.
-          </p>
-        </div>
+        {/* Tagline */}
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl text-center">
+          Describe your agent.
+          <br />
+          <span className="text-muted-foreground">We&apos;ll build it.</span>
+        </h1>
 
         {/* Prompt input */}
         <form onSubmit={handleSubmit} className="w-full">
