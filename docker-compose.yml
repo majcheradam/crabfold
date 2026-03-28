@@ -2,7 +2,7 @@ name: crabfold
 
 services:
   postgres:
-    image: postgres
+    image: postgres:latest
     container_name: crabfold-postgres
     environment:
       POSTGRES_DB: crabfold

@@ -11,7 +11,7 @@
       "zod": "^4.1.13",
       "@types/bun": "^1.3.4",
       "better-auth": "1.5.5",
-      "lucide-react": "^0.546.0",
+      "lucide-react": "^1.7.0",
       "next-themes": "^0.4.6",
       "react": "^19.2.3",
       "react-dom": "^19.2.3",
@@ -25,28 +25,31 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "check-types": "turbo check-types",
+    "typecheck": "turbo typecheck",
     "dev:web": "turbo -F web dev",
     "dev:server": "turbo -F server dev",
     "db:push": "turbo -F @crabfold/db db:push",
     "db:studio": "turbo -F @crabfold/db db:studio",
     "db:generate": "turbo -F @crabfold/db db:generate",
     "db:migrate": "turbo -F @crabfold/db db:migrate",
-    "db:start": "turbo -F @crabfold/db db:start",
-    "db:watch": "turbo -F @crabfold/db db:watch",
-    "db:stop": "turbo -F @crabfold/db db:stop",
-    "db:down": "turbo -F @crabfold/db db:down"
+    "check": "ultracite check",
+    "fix": "ultracite fix",
+    "prepare": "lefthook install"
   },
   "dependencies": {
     "@crabfold/env": "workspace:*",
-    "dotenv": "catalog:",
-    "zod": "catalog:"
+    "dotenv": "^17.3.1",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@crabfold/config": "workspace:*",
-    "@types/bun": "catalog:",
-    "turbo": "^2.8.12",
-    "typescript": "^5"
+    "@types/bun": "^1.3.11",
+    "@typescript/native-preview": "^7.0.0-dev.20260328.1",
+    "lefthook": "^2.1.4",
+    "oxfmt": "^0.42.0",
+    "oxlint": "^1.57.0",
+    "turbo": "^2.8.21",
+    "ultracite": "7.3.2"
   },
   "packageManager": "bun@1.3.11"
 }

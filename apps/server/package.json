@@ -4,7 +4,7 @@
   "main": "src/index.ts",
   "scripts": {
     "build": "tsdown",
-    "check-types": "tsc -b",
+    "typecheck": "tsgo --noEmit",
     "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
     "dev": "bun run --hot src/index.ts",
     "start": "bun run dist/index.mjs"
@@ -16,13 +16,13 @@
     "@elysiajs/cors": "^1.4.1",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
-    "elysia": "^1.4.21",
+    "elysia": "^1.4.28",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@crabfold/config": "workspace:*",
     "@types/bun": "catalog:",
-    "tsdown": "^0.16.5",
-    "typescript": "^5"
+    "tsdown": "^0.16.8",
+    "typescript": "^5.9.3"
   }
 }

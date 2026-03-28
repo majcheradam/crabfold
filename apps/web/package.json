@@ -11,12 +11,12 @@
     "@crabfold/auth": "workspace:*",
     "@crabfold/env": "workspace:*",
     "@crabfold/ui": "workspace:*",
-    "@tanstack/react-form": "^1.28.0",
+    "@tanstack/react-form": "^1.28.5",
     "babel-plugin-react-compiler": "^1.0.0",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
     "lucide-react": "catalog:",
-    "next": "^16.2.0",
+    "next": "^16.2.1",
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
@@ -25,11 +25,11 @@
   },
   "devDependencies": {
     "@crabfold/config": "workspace:*",
-    "@tailwindcss/postcss": "^4.1.18",
-    "@types/node": "^20",
+    "@tailwindcss/postcss": "^4.2.2",
+    "@types/node": "^20.19.37",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "tailwindcss": "catalog:",
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   }
 }
