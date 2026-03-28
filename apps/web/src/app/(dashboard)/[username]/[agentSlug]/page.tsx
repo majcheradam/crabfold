@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@crabfold/ui/components/button";
+import { Input } from "@crabfold/ui/components/input";
 import {
   Copy,
   Check,
@@ -9,6 +10,7 @@ import {
   Rocket,
   RotateCcw,
   Settings,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -18,6 +20,8 @@ export default function AgentOverviewPage() {
   const params = useParams<{ username: string; agentSlug: string }>();
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
 
   const handleCopyClone = () => {
     navigator.clipboard.writeText(
@@ -173,6 +177,82 @@ export default function AgentOverviewPage() {
           {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
         </button>
       </div>
+
+      {/* Delete */}
+      <div className="flex items-center justify-between border border-destructive/20 p-4">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs font-medium text-destructive">
+            Delete this agent
+          </span>
+          <span className="text-xs text-muted-foreground">
+            This action cannot be undone
+          </span>
+        </div>
+        <Button
+          variant="destructive"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => setShowDelete(true)}
+        >
+          <Trash2 className="size-3" />
+          Delete
+        </Button>
+      </div>
+
+      {/* Delete confirmation modal */}
+      {showDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80">
+          <div className="flex w-full max-w-md flex-col gap-4 border border-border bg-card p-6">
+            <div className="flex flex-col gap-2">
+              <h3 className="text-sm font-semibold text-foreground">
+                Delete {params.agentSlug}?
+              </h3>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                This will permanently delete this agent, its configuration,
+                skills, and all associated data. This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-muted-foreground">
+                Type{" "}
+                <span className="font-medium text-foreground">
+                  {params.agentSlug}
+                </span>{" "}
+                to confirm
+              </label>
+              <Input
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                placeholder={params.agentSlug}
+              />
+            </div>
+            <div className="flex justify-end gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowDelete(false);
+                  setDeleteConfirm("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={deleteConfirm !== params.agentSlug}
+                onClick={() => {
+                  router.push(`/${params.username}`);
+                }}
+                className="gap-1.5"
+              >
+                <Trash2 className="size-3" />
+                Delete permanently
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

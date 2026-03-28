@@ -19,7 +19,7 @@ export default function NewAgentPage() {
   useEffect(() => {
     if (initialPrompt) {
       const timer = setTimeout(() => {
-        router.push("/demo/github-issue-triager");
+        router.push("/demo");
       }, 4000);
       return () => clearTimeout(timer);
     }
@@ -30,7 +30,7 @@ export default function NewAgentPage() {
     setState("working");
 
     setTimeout(() => {
-      router.push("/demo/github-issue-triager");
+      router.push("/demo");
     }, 4000);
   };
 
