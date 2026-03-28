@@ -30,7 +30,7 @@ export function AgentWorking({ prompt }: { prompt: string }) {
   }, []);
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center px-4">
+    <div className="flex flex-1 flex-col items-center justify-center px-4">
       <div className="flex w-full max-w-xl flex-col gap-6">
         {/* Prompt echo */}
         <div className="flex flex-col gap-1">

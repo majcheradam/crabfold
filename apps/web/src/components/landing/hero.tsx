@@ -34,7 +34,7 @@ export function Hero({ onSubmit }: { onSubmit: (value: string) => void }) {
   };
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center px-4">
+    <div className="flex flex-1 flex-col items-center justify-center px-4">
       <div className="flex w-full max-w-2xl flex-col items-center gap-12">
         {/* Tagline */}
         <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl text-center">

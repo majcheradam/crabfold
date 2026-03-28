@@ -35,9 +35,9 @@ export default function NewAgentPage() {
   };
 
   return (
-    <>
+    <div className="flex min-h-[calc(100svh-3rem)] flex-col">
       {state === "idle" && <Hero onSubmit={handleSubmit} />}
       {state === "working" && <AgentWorking prompt={prompt} />}
-    </>
+    </div>
   );
 }

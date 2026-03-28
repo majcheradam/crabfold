@@ -16,9 +16,12 @@ import {
   SidebarMenuSubItem,
 } from "@crabfold/ui/components/sidebar";
 import { ChevronRightIcon } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export function NavMain({
   items,
+  extraItems,
 }: {
   items: {
     title: string;
@@ -30,7 +33,15 @@ export function NavMain({
       url: string;
     }[];
   }[];
+  extraItems?: {
+    title: string;
+    url: string;
+    icon?: React.ReactNode;
+    matchPattern?: string;
+  }[];
 }) {
+  const pathname = usePathname();
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
@@ -53,7 +64,14 @@ export function NavMain({
               <SidebarMenuSub>
                 {item.items?.map((subItem) => (
                   <SidebarMenuSubItem key={subItem.title}>
-                    <SidebarMenuSubButton render={<a href={subItem.url} />}>
+                    <SidebarMenuSubButton
+                      render={<Link href={subItem.url} />}
+                      isActive={
+                        (pathname === subItem.url ||
+                          pathname.startsWith(`${subItem.url}/`)) &&
+                        !pathname.endsWith("/metrics")
+                      }
+                    >
                       <span>{subItem.title}</span>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
@@ -61,6 +79,24 @@ export function NavMain({
               </SidebarMenuSub>
             </CollapsibleContent>
           </Collapsible>
+        ))}
+        {extraItems?.map((item) => (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton
+              render={<Link href={item.url} />}
+              tooltip={item.title}
+              isActive={
+                pathname === item.url ||
+                pathname.startsWith(`${item.url}/`) ||
+                (item.matchPattern
+                  ? pathname.endsWith(item.matchPattern)
+                  : false)
+              }
+            >
+              {item.icon}
+              <span>{item.title}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         ))}
       </SidebarMenu>
     </SidebarGroup>
