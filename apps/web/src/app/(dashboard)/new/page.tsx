@@ -1,43 +1,21 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { getSession } from "@/lib/auth-server";
 
-import { AgentWorking } from "@/components/landing/agent-working";
-import { Hero } from "@/components/landing/hero";
+import { NewAgentClient } from "./new-agent-client";
 
-export default function NewAgentPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialPrompt = searchParams.get("prompt") ?? "";
+export default async function NewAgentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ prompt?: string }>;
+}) {
+  const session = await getSession();
 
-  const [state, setState] = useState<"idle" | "working">(
-    initialPrompt ? "working" : "idle"
-  );
-  const [prompt, setPrompt] = useState(initialPrompt);
+  if (!session) {
+    redirect("/login");
+  }
 
-  useEffect(() => {
-    if (initialPrompt) {
-      const timer = setTimeout(() => {
-        router.push("/demo/github-issue-triager");
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [initialPrompt, router]);
+  const { prompt } = await searchParams;
 
-  const handleSubmit = (value: string) => {
-    setPrompt(value);
-    setState("working");
-
-    setTimeout(() => {
-      router.push("/demo/github-issue-triager");
-    }, 4000);
-  };
-
-  return (
-    <div className="flex min-h-[calc(100svh-3rem)] flex-col">
-      {state === "idle" && <Hero onSubmit={handleSubmit} />}
-      {state === "working" && <AgentWorking prompt={prompt} />}
-    </div>
-  );
+  return <NewAgentClient prompt={prompt ?? ""} username={session.user.name} />;
 }

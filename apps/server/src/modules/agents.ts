@@ -1,5 +1,5 @@
 import { auth } from "@crabfold/auth";
-import { eq, withUser } from "@crabfold/db";
+import { and, db, eq, withUser } from "@crabfold/db";
 import type { DbTransaction } from "@crabfold/db";
 import { agent } from "@crabfold/db/schema/agent";
 import type { AgentConfig } from "@crabfold/db/schema/agent";
@@ -119,6 +119,33 @@ export const agentsModule = new Elysia({ prefix: "/api/agents" })
     },
     {
       params: t.Object({ id: t.String() }),
+    }
+  )
+
+  // ── Get agent by slug ─────────────────────────────────────────
+  .get(
+    "/by-slug/:slug",
+    async ({ params, request, set }) => {
+      const user = await getAuthedUser(request.headers);
+      if (!user) {
+        set.status = 401;
+        return { error: "Unauthorized" };
+      }
+
+      const [row] = await db
+        .select()
+        .from(agent)
+        .where(and(eq(agent.slug, params.slug), eq(agent.userId, user.id)));
+
+      if (!row) {
+        set.status = 404;
+        return { error: "Not found" };
+      }
+
+      return row;
+    },
+    {
+      params: t.Object({ slug: t.String() }),
     }
   )
 

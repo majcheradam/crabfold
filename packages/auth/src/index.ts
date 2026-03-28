@@ -23,6 +23,7 @@ export function createAuth() {
       github: {
         clientId: env.GITHUB_CLIENT_ID,
         clientSecret: env.GITHUB_CLIENT_SECRET,
+        scope: ["repo"],
       },
       railway: {
         clientId: env.RAILWAY_CLIENT_ID,

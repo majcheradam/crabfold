@@ -27,6 +27,7 @@
         "@ai-sdk/google": "^3.0.53",
         "@crabfold/auth": "workspace:*",
         "@crabfold/db": "workspace:*",
+        "@crabfold/deploy": "workspace:*",
         "@crabfold/env": "workspace:*",
         "@elysiajs/cors": "^1.4.1",
         "@elysiajs/openapi": "^1.4.14",

@@ -1,85 +1,27 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { Input } from "@crabfold/ui/components/input";
-import { BotIcon, Check, Plus } from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
+import { apiServer } from "@/lib/api-server";
+import { getSession } from "@/lib/auth-server";
 
-const MOCK_AGENTS = [
-  {
-    icon: <BotIcon className="size-4" />,
-    name: "github-issue-triager",
-    slug: "github-issue-triager",
-  },
-  {
-    icon: <BotIcon className="size-4" />,
-    name: "slack-standup-bot",
-    slug: "slack-standup-bot",
-  },
-];
+import { ThreadsClient } from "./threads-client";
 
-export default function ThreadsPage() {
-  const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
+async function fetchAgents(userId: string) {
+  const api = await apiServer();
+  const { data, status } = await api.api.agents.get({ query: { userId } });
+  if (status !== 200 || !data || "error" in data) {
+    return [];
+  }
+  return data.agents;
+}
 
-  const filtered = MOCK_AGENTS.filter((a) =>
-    a.name.toLowerCase().includes(search.toLowerCase())
-  );
+export default async function ThreadsPage() {
+  const session = await getSession();
 
-  return (
-    <div className="flex min-h-[calc(100svh-3rem)] flex-col items-center justify-center px-4">
-      <div className="flex w-full max-w-md flex-col items-center gap-6">
-        <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="text-lg font-semibold text-foreground">Sessions</h1>
-          <p className="text-sm text-muted-foreground">
-            Choose an agent to view sessions
-          </p>
-        </div>
+  if (!session?.user) {
+    redirect("/login");
+  }
 
-        <div className="flex w-full flex-col border border-border">
-          {/* Search */}
-          <div className="border-b border-border p-2">
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Find Agent..."
-              className="border-0 bg-transparent shadow-none focus-visible:ring-0"
-            />
-          </div>
+  const agents = await fetchAgents(session.user.id);
 
-          {/* Agent list */}
-          <div className="flex flex-col">
-            {filtered.map((agent) => (
-              <Link
-                key={agent.slug}
-                href={`/demo/${agent.slug}/threads`}
-                onMouseEnter={() => setSelected(agent.slug)}
-                onMouseLeave={() => setSelected(null)}
-                className={`flex items-center gap-3 px-4 py-3 transition-colors ${
-                  selected === agent.slug ? "bg-foreground/5" : ""
-                }`}
-              >
-                <span className="text-muted-foreground">{agent.icon}</span>
-                <span className="flex-1 text-sm text-foreground">
-                  {agent.name}
-                </span>
-                {selected === agent.slug && (
-                  <Check className="size-4 text-foreground" />
-                )}
-              </Link>
-            ))}
-
-            {/* Create new */}
-            <Link
-              href="/new"
-              className="flex items-center gap-3 border-t border-border px-4 py-3 text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <Plus className="size-4" />
-              <span className="text-sm">Create Agent</span>
-            </Link>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <ThreadsClient agents={agents} username={session.user.name} />;
 }

@@ -1,164 +1,28 @@
-"use client";
+import { notFound, redirect } from "next/navigation";
 
-import { Button } from "@crabfold/ui/components/button";
-import { ArrowLeft } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { apiServer } from "@/lib/api-server";
+import { getSession } from "@/lib/auth-server";
 
-import { FrameworkTile } from "@/components/landing/tiles/framework-tile";
-import { SkillsTile } from "@/components/landing/tiles/skills-tile";
-import { WorkspaceTile } from "@/components/landing/tiles/workspace-tile";
-import type { Framework, Skill, WorkspaceFile } from "@/lib/types";
+import { EditorClient } from "./editor-client";
 
-const INITIAL_SKILLS: Skill[] = [
-  {
-    description: "Label and assign incoming GitHub issues based on content",
-    enabled: true,
-    id: "github-triage",
-    name: "GitHub Triage",
-  },
-  {
-    description: "Post summaries and alerts to Slack channels",
-    enabled: true,
-    id: "slack-notify",
-    name: "Slack Notify",
-  },
-  {
-    description: "Search the web for context and references",
-    enabled: false,
-    id: "web-search",
-    name: "Web Search",
-  },
-  {
-    description: "Review pull requests and suggest improvements",
-    enabled: false,
-    id: "code-review",
-    name: "Code Review",
-  },
-  {
-    description: "Store and retrieve long-term context from past interactions",
-    enabled: true,
-    id: "memory-recall",
-    name: "Memory Recall",
-  },
-  {
-    description: "Read and create calendar events for scheduling",
-    enabled: false,
-    id: "calendar-sync",
-    name: "Calendar Sync",
-  },
-];
+export default async function EditorPage({
+  params,
+}: {
+  params: Promise<{ username: string; agentSlug: string }>;
+}) {
+  const { username, agentSlug } = await params;
+  const session = await getSession();
 
-const INITIAL_FILES: WorkspaceFile[] = [
-  {
-    content: `name: github-issue-triager
-framework: openclaw
-version: 1.0.0
+  if (!session?.user) {
+    redirect("/login");
+  }
 
-gateway:
-  channels:
-    - type: github
-      repo: "your-org/your-repo"
-      events: [issues.opened, issues.edited]
+  const api = await apiServer();
+  const { data, status } = await api.api.agents["by-slug"][agentSlug].get();
 
-brain:
-  model: claude-sonnet-4-6
-  strategy: react
-  max_iterations: 5
+  if (status !== 200 || !data || "error" in data) {
+    notFound();
+  }
 
-heartbeat:
-  schedule: "*/5 * * * *"
-  tasks:
-    - check_unassigned_issues
-
-memory:
-  backend: markdown
-  path: ./memory`,
-    name: "config.yaml",
-  },
-  {
-    content: `# GitHub Issue Triager
-
-An autonomous agent that monitors GitHub repositories
-for new issues and automatically triages them.
-
-## Capabilities
-- Classify issues by type (bug, feature, question)
-- Apply appropriate labels
-- Assign to team members based on expertise
-- Post triage summary to Slack`,
-    name: "WORKSPACE.md",
-  },
-  {
-    content: `# Agent Context
-
-## Team Members
-- @alice — frontend, React
-- @bob — backend, Go
-- @carol — infra, DevOps
-
-## Label Taxonomy
-- bug, feature, question, docs, security
-- priority/high, priority/medium, priority/low`,
-    name: "memory/context.md",
-  },
-];
-
-export default function EditorPage() {
-  const router = useRouter();
-  const params = useParams<{ username: string; agentSlug: string }>();
-  const [framework, setFramework] = useState<Framework>("openclaw");
-  const [skills, setSkills] = useState<Skill[]>(INITIAL_SKILLS);
-  const [files, setFiles] = useState<WorkspaceFile[]>(INITIAL_FILES);
-
-  const handleToggleSkill = (id: string) => {
-    setSkills((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s))
-    );
-  };
-
-  const handleUpdateFile = (name: string, content: string) => {
-    setFiles((prev) =>
-      prev.map((f) => (f.name === name ? { ...f, content } : f))
-    );
-  };
-
-  return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-end justify-between">
-        <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-foreground">
-            {params.agentSlug}
-          </h2>
-          <span className="border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
-            Draft
-          </span>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.push(`/${params.username}/${params.agentSlug}`)}
-          className="gap-1.5"
-        >
-          <ArrowLeft className="size-3" />
-          Back
-        </Button>
-      </div>
-
-      {/* Framework */}
-      <FrameworkTile selected={framework} onSelect={setFramework} />
-
-      {/* Skills */}
-      <SkillsTile skills={skills} onToggle={handleToggleSkill} />
-
-      {/* Workspace files */}
-      <WorkspaceTile files={files} onUpdateFile={handleUpdateFile} />
-
-      {/* Save */}
-      <Button size="lg" className="self-end gap-1.5">
-        Save changes
-      </Button>
-    </div>
-  );
+  return <EditorClient agent={data} username={username} />;
 }

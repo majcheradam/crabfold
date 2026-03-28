@@ -2,8 +2,11 @@ import { auth } from "@crabfold/auth";
 import { and, db, eq } from "@crabfold/db";
 import { agent } from "@crabfold/db/schema/agent";
 import { account } from "@crabfold/db/schema/auth";
+import { createDefaultDeps, deployToRailway } from "@crabfold/deploy";
+import type { DeploySSEEvent } from "@crabfold/deploy";
 import { Elysia, t } from "elysia";
 
+import type { JobEvent } from "../lib/job-store";
 import { createJob, emitJobEvent } from "../lib/job-store";
 
 async function getAuthedUser(headers: Headers) {
@@ -12,6 +15,53 @@ async function getAuthedUser(headers: Headers) {
     return null;
   }
   return session.user;
+}
+
+async function getOAuthToken(
+  userId: string,
+  providerId: string
+): Promise<string | null> {
+  const [row] = await db
+    .select({ accessToken: account.accessToken })
+    .from(account)
+    .where(and(eq(account.userId, userId), eq(account.providerId, providerId)));
+  return row?.accessToken ?? null;
+}
+
+const STEP_LABELS: Record<string, string> = {
+  deploying: "Deploying",
+  env_vars: "Setting environment variables",
+  prepare: "Preparing deployment",
+  project: "Creating Railway project",
+  repo: "Creating GitHub repository",
+  service: "Creating Railway service",
+  storage: "Provisioning storage",
+};
+
+function sseFromDeployEvent(event: DeploySSEEvent): JobEvent {
+  if ("event" in event && event.event === "complete") {
+    return {
+      data: { railwayProjectId: event.railwayProjectId, url: event.url },
+      event: "complete",
+    };
+  }
+  if ("event" in event && event.event === "error") {
+    return {
+      data: { message: event.message },
+      event: "error",
+    };
+  }
+  const label =
+    event.message ??
+    (event.status === "done"
+      ? (STEP_LABELS[event.step] ?? event.step)
+      : `${STEP_LABELS[event.step] ?? event.step}...`);
+  return {
+    data: { buildStatus: event.buildStatus, domain: event.domain },
+    label,
+    status: event.status as JobEvent["status"],
+    step: event.step,
+  };
 }
 
 export const deployModule = new Elysia({ prefix: "/api/agents" }).post(
@@ -34,57 +84,42 @@ export const deployModule = new Elysia({ prefix: "/api/agents" }).post(
       return { error: "Not found" };
     }
 
-    // Check if user has connected their Railway account
-    const [railwayAccount] = await db
-      .select()
-      .from(account)
-      .where(
-        and(eq(account.userId, user.id), eq(account.providerId, "railway"))
-      );
+    // Retrieve OAuth tokens
+    const [githubToken, railwayToken] = await Promise.all([
+      getOAuthToken(user.id, "github"),
+      getOAuthToken(user.id, "railway"),
+    ]);
 
-    if (!railwayAccount) {
+    if (!railwayToken) {
       set.status = 403;
       return { code: "RAILWAY_NOT_CONNECTED" as const, error: "Forbidden" };
     }
 
-    // Railway account exists — kick off deploy pipeline
+    if (!githubToken) {
+      set.status = 403;
+      return { code: "GITHUB_NOT_CONNECTED" as const, error: "Forbidden" };
+    }
+
     const jobId = createJob();
 
-    (() => {
-      try {
-        emitJobEvent(jobId, {
-          data: {},
-          label: "Preparing deployment",
-          status: "done",
-          step: "prepare",
-        });
+    // Run real deploy pipeline in background
+    (async () => {
+      const deps = await createDefaultDeps();
 
-        emitJobEvent(jobId, {
-          data: {},
-          label: "Creating GitHub repository",
-          status: "done",
-          step: "github",
-        });
-
-        emitJobEvent(jobId, {
-          data: {},
-          label: "Provisioning Railway service",
-          status: "done",
-          step: "railway",
-        });
-
-        emitJobEvent(jobId, {
-          data: { agentId: row.id, slug: row.slug },
-          event: "complete",
-        });
-      } catch (error) {
-        emitJobEvent(jobId, {
-          data: {
-            message: error instanceof Error ? error.message : "Unknown error",
-          },
-          event: "error",
-        });
-      }
+      await deployToRailway(
+        {
+          agentId: row.id,
+          agentName: row.name,
+          agentSlug: row.slug,
+          envVars: {},
+          files: row.files,
+          fork: row.fork,
+          skills: row.skills,
+        },
+        { githubToken, railwayToken },
+        (event) => emitJobEvent(jobId, sseFromDeployEvent(event)),
+        deps
+      );
     })();
 
     return { jobId };

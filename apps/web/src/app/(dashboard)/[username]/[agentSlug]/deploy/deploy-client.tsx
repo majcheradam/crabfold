@@ -2,7 +2,8 @@
 
 import { env } from "@crabfold/env/web";
 import { Button } from "@crabfold/ui/components/button";
-import { AlertTriangle, Loader2, Rocket, Train } from "lucide-react";
+import { AlertTriangle, Check, Loader2, Rocket } from "lucide-react";
+import Link from "next/link";
 import { useRef, useState } from "react";
 
 import { api } from "@/lib/api-client";
@@ -11,13 +12,15 @@ import { authClient } from "@/lib/auth-client";
 type DeployState =
   | { status: "idle" }
   | { status: "deploying" }
-  | { status: "railway_required" }
+  | { status: "github_required" }
   | { status: "error"; message: string }
-  | { status: "complete" };
+  | { status: "complete"; url?: string };
 
 interface DeployEvent {
   step?: string;
   label?: string;
+  status?: string;
+  data?: { domain?: string; buildStatus?: string };
 }
 
 interface DeployClientProps {
@@ -39,48 +42,90 @@ export function DeployClient({
   const [events, setEvents] = useState<DeployEvent[]>([]);
   const deployStarted = useRef(false);
 
+  function redirectToRailwayOAuth() {
+    const callbackURL = `${window.location.origin}/${username}/${agentSlug}/deploy?autoRetry=true`;
+    authClient.signIn.social({
+      callbackURL,
+      provider: "railway" as "github",
+    });
+  }
+
   async function startDeploy(id: string) {
     setState({ status: "deploying" });
+    setEvents([]);
 
-    const { data, status } = await api.api.agents({ id }).deploy.post({});
+    const res = await api.api.agents({ id }).deploy.post({});
 
-    if (status === 403) {
-      setState({ status: "railway_required" });
+    if (res.status === 403) {
+      const body = res.data ?? res.error;
+      const code =
+        body && typeof body === "object" && "code" in body
+          ? (body as { code: string }).code
+          : null;
+      if (code === "RAILWAY_NOT_CONNECTED") {
+        redirectToRailwayOAuth();
+        return;
+      }
+      if (code === "GITHUB_NOT_CONNECTED") {
+        setState({ status: "github_required" });
+        return;
+      }
+      setState({ message: "Forbidden", status: "error" });
       return;
     }
 
-    if (!data || !("jobId" in data)) {
+    if (res.status !== 200 || !res.data || !("jobId" in res.data)) {
       setState({ message: "Failed to start deployment", status: "error" });
       return;
     }
 
-    const jobId = data.jobId as string;
+    const jobId = res.data.jobId as string;
 
     const evtSource = new EventSource(
       `${env.NEXT_PUBLIC_SERVER_URL}/api/jobs/${jobId}/stream`,
       { withCredentials: true }
     );
 
-    evtSource.addEventListener("progress", (e) => {
+    evtSource.addEventListener("message", (e) => {
       const event = JSON.parse(e.data) as DeployEvent;
-      setEvents((prev) => [...prev, event]);
+      if (event.step) {
+        setEvents((prev) => {
+          const idx = prev.findIndex((ev) => ev.step === event.step);
+          if (idx !== -1) {
+            const next = [...prev];
+            next[idx] = event;
+            return next;
+          }
+          return [...prev, event];
+        });
+      }
     });
 
-    evtSource.addEventListener("complete", () => {
-      setState({ status: "complete" });
+    evtSource.addEventListener("complete", (e) => {
       evtSource.close();
+      const event = JSON.parse(e.data);
+      setState({ status: "complete", url: event.data?.url });
     });
 
-    evtSource.addEventListener("error", () => {
+    evtSource.addEventListener("error", (e) => {
       if (evtSource.readyState === EventSource.CLOSED) {
         return;
       }
-      setState({ message: "Deploy stream interrupted", status: "error" });
       evtSource.close();
+      let message = "Deploy stream interrupted";
+      if (e instanceof MessageEvent && e.data) {
+        try {
+          const parsed = JSON.parse(e.data);
+          message = parsed.data?.message ?? message;
+        } catch {
+          // not JSON
+        }
+      }
+      setState({ message, status: "error" });
     });
   }
 
-  // Auto-retry on mount via initial state + lazy start
+  // Auto-retry on mount
   if (autoRetry && agentId && !deployStarted.current) {
     deployStarted.current = true;
     startDeploy(agentId);
@@ -91,14 +136,6 @@ export function DeployClient({
       return;
     }
     startDeploy(agentId);
-  }
-
-  function handleConnectRailway() {
-    const callbackURL = `/${username}/${agentSlug}/deploy?autoRetry=true`;
-    authClient.signIn.social({
-      callbackURL,
-      provider: "railway",
-    });
   }
 
   return (
@@ -112,9 +149,8 @@ export function DeployClient({
               Deploy to Railway
             </h2>
             <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
-              Connect your Railway account to deploy this agent. Crabfold will
-              create a GitHub repo, provision infrastructure, and deploy
-              automatically.
+              Crabfold will create a GitHub repo, provision Railway
+              infrastructure, and deploy your agent automatically.
             </p>
           </div>
           <Button
@@ -129,34 +165,25 @@ export function DeployClient({
         </>
       )}
 
-      {/* Railway not connected */}
-      {state.status === "railway_required" && (
+      {/* GitHub not connected */}
+      {state.status === "github_required" && (
         <div className="flex w-full max-w-md flex-col gap-5 border border-border bg-card p-6">
           <div className="flex flex-col items-center gap-3 text-center">
-            <Train className="size-8 text-muted-foreground" />
+            <AlertTriangle className="size-8 text-muted-foreground" />
             <h2 className="text-sm font-semibold text-foreground">
-              Connect Railway
+              GitHub token missing
             </h2>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Crabfold needs access to your Railway account to deploy agents.
-              You&apos;ll be redirected to Railway to authorize, then brought
-              back here to continue.
+              Your GitHub account is connected but the access token is missing.
+              Try signing out and signing in again with GitHub.
             </p>
           </div>
-          <Button
-            size="lg"
-            className="w-full gap-2"
-            onClick={handleConnectRailway}
-          >
-            <Train className="size-3.5" />
-            Authorize Railway
-          </Button>
           <button
             type="button"
             className="text-xs text-muted-foreground hover:text-foreground"
             onClick={() => setState({ status: "idle" })}
           >
-            Cancel
+            Back
           </button>
         </div>
       )}
@@ -176,12 +203,21 @@ export function DeployClient({
                 Starting deploy pipeline...
               </span>
             )}
-            {events.map((evt, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs">
-                <span className="size-1.5 rounded-full bg-green-500" />
+            {events.map((evt) => (
+              <div key={evt.step} className="flex items-center gap-2 text-xs">
+                {evt.status === "done" ? (
+                  <Check className="size-3 text-green-500" />
+                ) : (
+                  <Loader2 className="size-3 animate-spin text-muted-foreground" />
+                )}
                 <span className="text-muted-foreground">
                   {evt.label ?? evt.step}
                 </span>
+                {evt.data?.buildStatus && evt.status !== "done" && (
+                  <span className="text-[10px] text-muted-foreground/60">
+                    ({evt.data.buildStatus.toLowerCase()})
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -190,7 +226,7 @@ export function DeployClient({
 
       {/* Complete */}
       {state.status === "complete" && (
-        <div className="flex flex-col items-center gap-3 text-center">
+        <div className="flex flex-col items-center gap-4 text-center">
           <div className="flex size-10 items-center justify-center border border-green-500/20 bg-green-500/10">
             <Rocket className="size-5 text-green-500" />
           </div>
@@ -200,6 +236,21 @@ export function DeployClient({
           <p className="text-xs text-muted-foreground">
             Your agent is now live on Railway.
           </p>
+          {state.url && (
+            <a
+              href={state.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-foreground underline underline-offset-2"
+            >
+              {state.url}
+            </a>
+          )}
+          <Link href={`/${username}/${agentSlug}`}>
+            <Button variant="outline" size="sm">
+              Go to agent
+            </Button>
+          </Link>
         </div>
       )}
 
@@ -210,7 +261,9 @@ export function DeployClient({
           <h2 className="text-sm font-semibold text-foreground">
             Deploy failed
           </h2>
-          <p className="text-xs text-muted-foreground">{state.message}</p>
+          <p className="max-w-sm text-xs text-muted-foreground">
+            {state.message}
+          </p>
           <Button
             variant="outline"
             size="sm"
