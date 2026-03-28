@@ -1,30 +1,70 @@
-"use client";
-
+import { env } from "@crabfold/env/web";
 import { Plus } from "lucide-react";
+import { cookies } from "next/headers";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { redirect } from "next/navigation";
 
-const MOCK_AGENTS = [
-  {
-    fork: "openclaw",
-    lastActive: "2 min ago",
-    name: "GitHub Issue Triager",
-    slug: "github-issue-triager",
-    status: "live" as const,
-    threads: 12,
-  },
-  {
-    fork: "nanobot",
-    lastActive: "1 hour ago",
-    name: "Slack Standup Bot",
-    slug: "slack-standup-bot",
-    status: "draft" as const,
-    threads: 0,
-  },
-];
+import { getSession } from "@/lib/auth-server";
 
-export default function DashboardPage() {
-  const params = useParams<{ username: string }>();
+interface DashboardAgent {
+  id: string;
+  slug: string;
+  name: string;
+  fork: string;
+  status: string;
+  health: string | null;
+  threadCount: number;
+  lastActive: string;
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) {
+    return "just now";
+  }
+  if (mins < 60) {
+    return `${mins} min ago`;
+  }
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+async function fetchAgents(userId: string): Promise<DashboardAgent[]> {
+  const cookieStore = await cookies();
+  const res = await fetch(
+    `${env.NEXT_PUBLIC_SERVER_URL}/api/agents?userId=${userId}`,
+    {
+      cache: "no-store",
+      headers: { cookie: cookieStore.toString() },
+    }
+  );
+
+  if (!res.ok) {
+    return [];
+  }
+
+  const data = await res.json();
+  return data.agents ?? [];
+}
+
+export default async function DashboardPage({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}) {
+  const { username } = await params;
+  const session = await getSession();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const agents = await fetchAgents(session.user.id);
 
   return (
     <div className="p-6">
@@ -33,10 +73,10 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {MOCK_AGENTS.map((agent) => (
+        {agents.map((agent) => (
           <Link
-            key={agent.slug}
-            href={`/${params.username}/${agent.slug}`}
+            key={agent.id}
+            href={`/${username}/${agent.slug}`}
             className="flex flex-col gap-3 border border-border p-4 transition-colors hover:border-foreground/20"
           >
             <div className="flex items-center justify-between">
@@ -64,13 +104,12 @@ export default function DashboardPage() {
               <span className="border border-border px-1.5 py-0.5 text-[10px]">
                 {agent.fork}
               </span>
-              <span>{agent.threads} threads</span>
-              <span>{agent.lastActive}</span>
+              <span>{agent.threadCount} threads</span>
+              <span>{timeAgo(agent.lastActive)}</span>
             </div>
           </Link>
         ))}
 
-        {/* New agent card */}
         <Link
           href="/new"
           className="flex flex-col items-center justify-center gap-2 border border-dashed border-border p-4 text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"

@@ -24,6 +24,11 @@ interface ClawhubSkill {
   version?: string;
 }
 
+interface ClawhubSkillPackage {
+  manifest: Record<string, unknown>;
+  files: { path: string; content: string }[];
+}
+
 export const connectorsModule = new Elysia({ prefix: "/api/connectors" })
   // ── Search skills from Clawhub ──────────────────────────────
   .get(
@@ -80,10 +85,56 @@ export const connectorsModule = new Elysia({ prefix: "/api/connectors" })
       return { skills };
     },
     {
+      detail: {
+        description: "Search the Clawhub skill marketplace",
+        tags: ["Connectors"],
+      },
       query: t.Object({
         category: t.Optional(t.String()),
         q: t.Optional(t.String()),
       }),
+    }
+  )
+
+  // ── List installed skills for an agent ──────────────────────
+  .get(
+    "/skills/:agentId",
+    async ({ params, request, set }) => {
+      const user = await getAuthedUser(request.headers);
+      if (!user) {
+        set.status = 401;
+        return { error: "Unauthorized" };
+      }
+
+      // Verify agent ownership
+      const agentRow = await withUser(user.id, (tx) =>
+        tx
+          .select()
+          .from(agent)
+          .where(eq(agent.id, params.agentId))
+          .then((rows) => rows[0] ?? null)
+      );
+
+      if (!agentRow) {
+        set.status = 404;
+        return { error: "Agent not found" };
+      }
+
+      const skills = await withUser(user.id, (tx) =>
+        tx
+          .select()
+          .from(agentSkill)
+          .where(eq(agentSkill.agentId, params.agentId))
+      );
+
+      return { skills };
+    },
+    {
+      detail: {
+        description: "List installed skills for an agent",
+        tags: ["Connectors"],
+      },
+      params: t.Object({ agentId: t.String() }),
     }
   )
 
@@ -127,7 +178,24 @@ export const connectorsModule = new Elysia({ prefix: "/api/connectors" })
       );
 
       if (existing.length > 0) {
-        return { installed: true, message: "Skill already installed" };
+        return {
+          installed: true,
+          message: "Skill already installed",
+          tools: [],
+        };
+      }
+
+      // Download skill package from Clawhub
+      let skillPackage: ClawhubSkillPackage | null = null;
+      try {
+        const res = await fetch(
+          `${env.CLAWHUB_API_URL}/api/v1/skills/${encodeURIComponent(skillId)}/download`
+        );
+        if (res.ok) {
+          skillPackage = (await res.json()) as ClawhubSkillPackage;
+        }
+      } catch {
+        // Clawhub unavailable — proceed without package
       }
 
       // Insert skill record
@@ -157,7 +225,10 @@ export const connectorsModule = new Elysia({ prefix: "/api/connectors" })
           const res = await fetch(
             `${agentRow.deploymentUrl}/api/skills/install`,
             {
-              body: JSON.stringify({ skillId }),
+              body: JSON.stringify({
+                files: skillPackage?.files,
+                skillId,
+              }),
               headers: { "Content-Type": "application/json" },
               method: "POST",
             }
@@ -178,6 +249,11 @@ export const connectorsModule = new Elysia({ prefix: "/api/connectors" })
         agentId: t.String(),
         skillId: t.String(),
       }),
+      detail: {
+        description:
+          "Install a skill from Clawhub onto an agent. Downloads the package and forwards to the running agent.",
+        tags: ["Connectors"],
+      },
     }
   )
 
@@ -248,6 +324,61 @@ export const connectorsModule = new Elysia({ prefix: "/api/connectors" })
         agentId: t.String(),
         skillId: t.String(),
       }),
+      detail: {
+        description: "Uninstall a skill from an agent",
+        tags: ["Connectors"],
+      },
+    }
+  )
+
+  // ── List MCP connections for an agent ───────────────────────
+  .get(
+    "/mcp/:agentId",
+    async ({ params, request, set }) => {
+      const user = await getAuthedUser(request.headers);
+      if (!user) {
+        set.status = 401;
+        return { error: "Unauthorized" };
+      }
+
+      // Verify agent ownership
+      const agentRow = await withUser(user.id, (tx) =>
+        tx
+          .select()
+          .from(agent)
+          .where(eq(agent.id, params.agentId))
+          .then((rows) => rows[0] ?? null)
+      );
+
+      if (!agentRow) {
+        set.status = 404;
+        return { error: "Agent not found" };
+      }
+
+      const connections = await withUser(user.id, (tx) =>
+        tx
+          .select()
+          .from(mcpConnection)
+          .where(eq(mcpConnection.agentId, params.agentId))
+      );
+
+      return {
+        connections: connections.map((c) => ({
+          connectedAt: c.connectedAt,
+          id: c.id,
+          name: c.name,
+          status: "connected" as const,
+          tools: c.tools,
+          url: c.url,
+        })),
+      };
+    },
+    {
+      detail: {
+        description: "List MCP server connections for an agent",
+        tags: ["Connectors"],
+      },
+      params: t.Object({ agentId: t.String() }),
     }
   )
 
@@ -339,5 +470,81 @@ export const connectorsModule = new Elysia({ prefix: "/api/connectors" })
         name: t.String({ minLength: 1 }),
         url: t.String({ minLength: 1 }),
       }),
+      detail: {
+        description:
+          "Connect an MCP server to an agent. Validates the server, discovers tools, and persists the connection.",
+        tags: ["Connectors"],
+      },
+    }
+  )
+
+  // ── Disconnect MCP server from an agent ─────────────────────
+  .delete(
+    "/mcp",
+    async ({ body, request, set }) => {
+      const user = await getAuthedUser(request.headers);
+      if (!user) {
+        set.status = 401;
+        return { error: "Unauthorized" };
+      }
+
+      const { agentId, connectionId } = body;
+
+      // Verify agent ownership
+      const agentRow = await withUser(user.id, (tx) =>
+        tx
+          .select()
+          .from(agent)
+          .where(eq(agent.id, agentId))
+          .then((rows) => rows[0] ?? null)
+      );
+
+      if (!agentRow) {
+        set.status = 404;
+        return { error: "Agent not found" };
+      }
+
+      // Find and delete the connection
+      const [deleted] = await withUser(user.id, (tx) =>
+        tx
+          .delete(mcpConnection)
+          .where(
+            and(
+              eq(mcpConnection.id, connectionId),
+              eq(mcpConnection.agentId, agentId)
+            )
+          )
+          .returning({ id: mcpConnection.id, name: mcpConnection.name })
+      );
+
+      if (!deleted) {
+        set.status = 404;
+        return { error: "MCP connection not found" };
+      }
+
+      // If agent is live, disconnect on the running agent
+      if (agentRow.status === "live" && agentRow.deploymentUrl) {
+        try {
+          await fetch(`${agentRow.deploymentUrl}/api/mcp/disconnect`, {
+            body: JSON.stringify({ name: deleted.name }),
+            headers: { "Content-Type": "application/json" },
+            method: "POST",
+          });
+        } catch {
+          // Agent unreachable
+        }
+      }
+
+      return { disconnected: true };
+    },
+    {
+      body: t.Object({
+        agentId: t.String(),
+        connectionId: t.String(),
+      }),
+      detail: {
+        description: "Disconnect an MCP server from an agent",
+        tags: ["Connectors"],
+      },
     }
   );

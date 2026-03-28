@@ -5,8 +5,10 @@ import { openapi } from "@elysiajs/openapi";
 import { Elysia } from "elysia";
 
 import { agentsModule } from "./modules/agents";
+import { apiKeysModule } from "./modules/api-keys";
 import { connectorsModule } from "./modules/connectors";
 import { dashboardModule } from "./modules/dashboard";
+import { deployModule } from "./modules/deploy";
 import { gatewayModule } from "./modules/gateway";
 import { jobsModule } from "./modules/jobs";
 import { observabilityModule } from "./modules/observability";
@@ -39,6 +41,8 @@ const app = new Elysia()
   .use(betterAuth)
   .use(dashboardModule)
   .use(agentsModule)
+  .use(deployModule)
+  .use(apiKeysModule)
   .use(jobsModule)
   .use(threadsModule)
   .use(connectorsModule)

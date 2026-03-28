@@ -1,12 +1,44 @@
+import { db } from "@crabfold/db";
+import { gatewayLog } from "@crabfold/db/schema/gateway-log";
+import { randomUUIDv7 } from "bun";
 import { Elysia, t } from "elysia";
 
 import { validateApiKey } from "../lib/api-key";
 import { checkRateLimit } from "../lib/rate-limiter";
 
 /**
+ * Log a gateway proxy request (fire-and-forget).
+ * Uses raw db (no RLS) since gateway callers are external.
+ */
+async function logGatewayRequest(entry: {
+  agentId: string;
+  keyId: string;
+  durationMs: number;
+  status: number;
+  tokenCount?: number;
+}) {
+  try {
+    await db
+      .insert(gatewayLog)
+      .values({
+        agentId: entry.agentId,
+        durationMs: entry.durationMs,
+        id: randomUUIDv7(),
+        keyId: entry.keyId,
+        status: entry.status,
+        tokenCount: entry.tokenCount ?? null,
+      })
+      .execute();
+  } catch {
+    // fire-and-forget: swallow errors
+  }
+}
+
+/**
  * Gateway module — proxy external API consumers to deployed agents.
  * Validates API key, enforces rate limits, resolves deployment URL,
  * and proxies the request with stream passthrough.
+ * Logs each request to gateway_log and emits OTel-style span attributes.
  */
 export const gatewayModule = new Elysia({ prefix: "/gateway" }).post(
   "/:agentId/chat",
@@ -67,6 +99,14 @@ export const gatewayModule = new Elysia({ prefix: "/gateway" }).post(
 
       const latencyMs = Date.now() - startTime;
 
+      // Log the gateway request
+      logGatewayRequest({
+        agentId: params.agentId,
+        durationMs: latencyMs,
+        keyId: keyData.keyId,
+        status: proxyRes.status,
+      });
+
       // If the response is streaming, pass through
       if (
         proxyRes.headers.get("Content-Type")?.includes("text/event-stream") ||
@@ -78,6 +118,7 @@ export const gatewayModule = new Elysia({ prefix: "/gateway" }).post(
             Connection: "keep-alive",
             "Content-Type":
               proxyRes.headers.get("Content-Type") ?? "text/event-stream",
+            "X-Gateway-Agent": params.agentId,
             "X-Gateway-Latency": String(latencyMs),
           },
         });
@@ -86,8 +127,19 @@ export const gatewayModule = new Elysia({ prefix: "/gateway" }).post(
       // Non-streaming response
       const data = await proxyRes.json();
       set.headers["X-Gateway-Latency"] = String(latencyMs);
+      set.headers["X-Gateway-Agent"] = params.agentId;
       return data;
     } catch (error) {
+      const latencyMs = Date.now() - startTime;
+
+      // Log the failed request
+      logGatewayRequest({
+        agentId: params.agentId,
+        durationMs: latencyMs,
+        keyId: keyData.keyId,
+        status: 502,
+      });
+
       set.status = 502;
       return {
         error: "Failed to proxy to agent",
@@ -100,6 +152,11 @@ export const gatewayModule = new Elysia({ prefix: "/gateway" }).post(
       api_key: t.Optional(t.String()),
       message: t.String({ minLength: 1 }),
     }),
+    detail: {
+      description:
+        "Proxy a chat message to a deployed agent. Requires a valid API key.",
+      tags: ["Gateway"],
+    },
     params: t.Object({ agentId: t.String() }),
   }
 );

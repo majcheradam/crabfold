@@ -7,52 +7,45 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@crabfold/ui/components/sidebar";
-import { TerminalIcon, PlusIcon, BotIcon, ActivityIcon } from "lucide-react";
+import { BotIcon, PlusIcon, TerminalIcon } from "lucide-react";
 import Link from "next/link";
-import * as React from "react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
 
-const data = {
-  navMain: [
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    image: string | null;
+  } | null;
+  agents: { slug: string; name: string }[];
+}
+
+export function AppSidebar({ user, agents, ...props }: AppSidebarProps) {
+  const username = user?.name ?? "";
+
+  const navMain = [
     {
       icon: <BotIcon />,
       isActive: true,
-      items: [
-        {
-          title: "github-issue-triager",
-          url: "/demo/github-issue-triager",
-        },
-        {
-          title: "slack-standup-bot",
-          url: "/demo/slack-standup-bot",
-        },
-      ],
+      items: agents.map((a) => ({
+        title: a.slug,
+        url: `/${username}/${a.slug}`,
+      })),
       title: "Agents",
-      url: "/demo",
+      url: `/${username}`,
     },
-  ],
-  navSingle: [
-    {
-      icon: <ActivityIcon />,
-      matchPattern: "/metrics",
-      title: "Observability",
-      url: "/metrics",
-    },
-  ],
-  user: {
-    avatar: "",
-    email: "demo@crabfold.ai",
-    name: "demo",
-  },
-};
+  ];
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <Link href="/demo" className="flex items-center gap-2 px-2 py-1">
+        <Link
+          href={username ? `/${username}` : "/"}
+          className="flex items-center gap-2 px-2 py-1"
+        >
           <TerminalIcon className="size-4 text-foreground" />
           <span className="text-xs font-medium uppercase tracking-widest text-foreground group-data-[collapsible=icon]:hidden">
             crabfold
@@ -71,10 +64,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </span>
           </Link>
         </div>
-        <NavMain items={data.navMain} extraItems={data.navSingle} />
+        <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        {user && (
+          <NavUser
+            user={{
+              avatar: user.image ?? "",
+              email: user.email,
+              name: user.name,
+            }}
+          />
+        )}
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
