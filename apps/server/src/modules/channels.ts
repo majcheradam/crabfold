@@ -38,6 +38,7 @@ async function proxyToGateway(
   const options: RequestInit = {
     headers: { "Content-Type": "application/json" },
     method,
+    signal: AbortSignal.timeout(10_000),
   };
   if (body) {
     options.body = JSON.stringify(body);
@@ -54,6 +55,40 @@ async function proxyToGateway(
     return res.json();
   }
   return { message: await res.text() };
+}
+
+type ProbeResult =
+  | { status: "online"; health: Record<string, unknown> | null }
+  | { status: "crashing"; httpStatus: number }
+  | { status: "unreachable" };
+
+/**
+ * Check if the gateway is reachable. Tries /api/health first,
+ * falls back to root path — some gateways don't expose /api/health.
+ */
+async function probeGateway(deploymentUrl: string): Promise<ProbeResult> {
+  for (const path of ["/api/health", "/"]) {
+    try {
+      const res = await fetch(`${deploymentUrl}${path}`, {
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (res.ok) {
+        const contentType = res.headers.get("Content-Type") ?? "";
+        if (contentType.includes("application/json")) {
+          const data = (await res.json()) as Record<string, unknown>;
+          return { health: data, status: "online" };
+        }
+        return { health: null, status: "online" };
+      }
+      // 502/503 = container is crashing
+      if (res.status === 502 || res.status === 503) {
+        return { httpStatus: res.status, status: "crashing" };
+      }
+    } catch {
+      // try next path
+    }
+  }
+  return { status: "unreachable" };
 }
 
 export const channelsModule = new Elysia({ prefix: "/api/agents" })
@@ -78,32 +113,30 @@ export const channelsModule = new Elysia({ prefix: "/api/agents" })
 
       // If agent is live, try to get live status from gateway
       if (row.status === "live" && row.deploymentUrl) {
-        try {
-          const health = (await proxyToGateway(
-            row.deploymentUrl,
-            "/api/health"
-          )) as Record<string, unknown>;
+        const probe = await probeGateway(row.deploymentUrl);
 
+        if (probe.status === "online") {
           return {
             channels: configured.map((ch) => ({
               ...ch,
               connected: Boolean(
-                health.channels &&
-                typeof health.channels === "object" &&
-                (health.channels as Record<string, unknown>)[ch.id]
+                probe.health?.channels &&
+                typeof probe.health.channels === "object" &&
+                (probe.health.channels as Record<string, unknown>)[ch.id]
               ),
             })),
             gatewayStatus: "online",
           };
-        } catch {
-          return {
-            channels: configured.map((ch) => ({
-              ...ch,
-              connected: false,
-            })),
-            gatewayStatus: "unreachable",
-          };
         }
+
+        return {
+          channels: configured.map((ch) => ({
+            ...ch,
+            connected: false,
+          })),
+          gatewayStatus:
+            probe.status === "crashing" ? "crashing" : "unreachable",
+        };
       }
 
       return {

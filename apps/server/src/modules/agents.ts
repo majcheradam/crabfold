@@ -264,6 +264,33 @@ export const agentsModule = new Elysia({ prefix: "/api/agents" })
     }
   )
 
+  // ── Delete agent ───────────────────────────────────────────────
+  .delete(
+    "/:id",
+    async ({ params, request, set }) => {
+      const user = await getAuthedUser(request.headers);
+      if (!user) {
+        set.status = 401;
+        return { error: "Unauthorized" };
+      }
+
+      const row = await withUser(user.id, (tx) => findAgent(tx, params.id));
+      if (!row) {
+        set.status = 404;
+        return { error: "Not found" };
+      }
+
+      await withUser(user.id, (tx) =>
+        tx.delete(agent).where(eq(agent.id, params.id))
+      );
+
+      return { deleted: true };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+    }
+  )
+
   // ── Switch fork ───────────────────────────────────────────────
   .post(
     "/:id/fork",

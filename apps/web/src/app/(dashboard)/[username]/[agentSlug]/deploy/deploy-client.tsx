@@ -11,7 +11,7 @@ import { authClient } from "@/lib/auth-client";
 
 type DeployState =
   | { status: "idle" }
-  | { status: "deploying" }
+  | { status: "deploying"; jobId?: string }
   | { status: "error"; message: string }
   | { status: "complete"; url?: string };
 
@@ -122,9 +122,72 @@ export function DeployClient({
     });
   }
 
+  const retryCount = useRef(0);
+  const MAX_RETRIES = 5;
+
+  function connectToStream(jobId: string) {
+    const evtSource = new EventSource(
+      `${env.NEXT_PUBLIC_SERVER_URL}/api/jobs/${jobId}/stream`,
+      { withCredentials: true }
+    );
+
+    evtSource.addEventListener("message", (e) => {
+      retryCount.current = 0;
+      const event = JSON.parse(e.data) as DeployEvent;
+      if (event.step) {
+        setEvents((prev) => {
+          const idx = prev.findIndex((ev) => ev.step === event.step);
+          if (idx !== -1) {
+            const next = [...prev];
+            next[idx] = event;
+            return next;
+          }
+          return [...prev, event];
+        });
+      }
+    });
+
+    evtSource.addEventListener("complete", (e) => {
+      evtSource.close();
+      const event = JSON.parse(e.data);
+      setState({ status: "complete", url: event.data?.url });
+    });
+
+    evtSource.addEventListener("error", (e) => {
+      evtSource.close();
+
+      // Check if this is a real error event with data (server-sent error)
+      if (e instanceof MessageEvent && e.data) {
+        try {
+          const parsed = JSON.parse(e.data);
+          setState({
+            message: parsed.data?.message ?? "Deploy failed",
+            status: "error",
+          });
+          return;
+        } catch {
+          // not JSON, treat as stream interruption
+        }
+      }
+
+      // Stream interrupted — reconnect if under retry limit
+      if (retryCount.current < MAX_RETRIES) {
+        retryCount.current += 1;
+        setTimeout(() => connectToStream(jobId), 2000);
+      } else {
+        setState({
+          message:
+            "Lost connection to deploy stream. The deploy may still be running — check Railway.",
+          status: "error",
+        });
+      }
+    });
+  }
+
   async function startDeploy(id: string) {
     setState({ status: "deploying" });
     setEvents([]);
+    retryCount.current = 0;
 
     const res = await api.api.agents({ id }).deploy.post({});
 
@@ -156,49 +219,8 @@ export function DeployClient({
     }
 
     const jobId = res.data.jobId as string;
-
-    const evtSource = new EventSource(
-      `${env.NEXT_PUBLIC_SERVER_URL}/api/jobs/${jobId}/stream`,
-      { withCredentials: true }
-    );
-
-    evtSource.addEventListener("message", (e) => {
-      const event = JSON.parse(e.data) as DeployEvent;
-      if (event.step) {
-        setEvents((prev) => {
-          const idx = prev.findIndex((ev) => ev.step === event.step);
-          if (idx !== -1) {
-            const next = [...prev];
-            next[idx] = event;
-            return next;
-          }
-          return [...prev, event];
-        });
-      }
-    });
-
-    evtSource.addEventListener("complete", (e) => {
-      evtSource.close();
-      const event = JSON.parse(e.data);
-      setState({ status: "complete", url: event.data?.url });
-    });
-
-    evtSource.addEventListener("error", (e) => {
-      if (evtSource.readyState === EventSource.CLOSED) {
-        return;
-      }
-      evtSource.close();
-      let message = "Deploy stream interrupted";
-      if (e instanceof MessageEvent && e.data) {
-        try {
-          const parsed = JSON.parse(e.data);
-          message = parsed.data?.message ?? message;
-        } catch {
-          // not JSON
-        }
-      }
-      setState({ message, status: "error" });
-    });
+    setState({ jobId, status: "deploying" });
+    connectToStream(jobId);
   }
 
   // Auto-deploy when connections are ready

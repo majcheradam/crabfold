@@ -11,31 +11,54 @@ export const jobsModule = new Elysia({ prefix: "/api/jobs" }).get(
       new ReadableStream({
         start(controller) {
           const encoder = new TextEncoder();
+          let closed = false;
 
           const send = (data: unknown) => {
+            if (closed) {
+              return;
+            }
             const event =
               typeof data === "object" && data !== null && "event" in data
                 ? (data as { event: string }).event
                 : "message";
 
-            controller.enqueue(
-              encoder.encode(
-                `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
-              )
-            );
+            try {
+              controller.enqueue(
+                encoder.encode(
+                  `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
+                )
+              );
+            } catch {
+              closed = true;
+            }
           };
 
           const unsubscribe = subscribeToJob(jobId, (event) => {
             send(event);
 
-            if (event.event === "complete" || event.event === "error") {
-              controller.close();
+            if (
+              (event.event === "complete" || event.event === "error") &&
+              !closed
+            ) {
+              closed = true;
+              try {
+                controller.close();
+              } catch {
+                // already closed
+              }
             }
           });
 
           if (!unsubscribe) {
             send({ data: { message: "Job not found" }, event: "error" });
-            controller.close();
+            if (!closed) {
+              closed = true;
+              try {
+                controller.close();
+              } catch {
+                // already closed
+              }
+            }
           }
         },
       }),

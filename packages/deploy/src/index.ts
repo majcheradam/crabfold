@@ -1,5 +1,6 @@
 export { createDefaultDeps, deployToRailway } from "./deploy-service";
 export type { DeployDeps } from "./deploy-service";
+export { getServiceDomains } from "./railway";
 export { createJob, emitToJob, getJob, subscribeToJob } from "./jobs";
 export type {
   AgentFileInput,

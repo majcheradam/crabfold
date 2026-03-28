@@ -244,6 +244,51 @@ export async function createDomain(
   return { domain: data.serviceDomainCreate.domain };
 }
 
+export async function getServiceDomains(
+  token: string,
+  projectId: string
+): Promise<{ domain: string; serviceId: string }[]> {
+  const data = await railwayGql<{
+    project: {
+      services: {
+        edges: {
+          node: {
+            id: string;
+            serviceDomains: { domain: string }[];
+          };
+        }[];
+      };
+    };
+  }>({
+    query: `
+      query($projectId: String!) {
+        project(id: $projectId) {
+          services {
+            edges {
+              node {
+                id
+                serviceDomains {
+                  domain
+                }
+              }
+            }
+          }
+        }
+      }
+    `,
+    token,
+    variables: { projectId },
+  });
+
+  const results: { domain: string; serviceId: string }[] = [];
+  for (const edge of data.project.services.edges) {
+    for (const sd of edge.node.serviceDomains) {
+      results.push({ domain: sd.domain, serviceId: edge.node.id });
+    }
+  }
+  return results;
+}
+
 export type DeploymentStatus =
   | "BUILDING"
   | "CRASHED"

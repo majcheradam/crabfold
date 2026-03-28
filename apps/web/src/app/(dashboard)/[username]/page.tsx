@@ -5,22 +5,7 @@ import { redirect } from "next/navigation";
 import { apiServer } from "@/lib/api-server";
 import { getSession } from "@/lib/auth-server";
 
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) {
-    return "just now";
-  }
-  if (mins < 60) {
-    return `${mins} min ago`;
-  }
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) {
-    return `${hours}h ago`;
-  }
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
+import { AgentCard } from "./agent-card";
 
 async function fetchAgents(userId: string) {
   const api = await apiServer();
@@ -53,40 +38,7 @@ export default async function DashboardPage({
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {agents.map((agent) => (
-          <Link
-            key={agent.id}
-            href={`/${username}/${agent.slug}`}
-            className="flex flex-col gap-3 border border-border p-4 transition-colors hover:border-foreground/20"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-foreground">
-                {agent.name}
-              </span>
-              <span
-                className={`flex items-center gap-1 text-[10px] ${
-                  agent.status === "live"
-                    ? "text-green-500"
-                    : "text-muted-foreground"
-                }`}
-              >
-                <span
-                  className={`size-1.5 rounded-full ${
-                    agent.status === "live"
-                      ? "bg-green-500"
-                      : "bg-muted-foreground/30"
-                  }`}
-                />
-                {agent.status}
-              </span>
-            </div>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span className="border border-border px-1.5 py-0.5 text-[10px]">
-                {agent.fork}
-              </span>
-              <span>{agent.threadCount} threads</span>
-              <span>{timeAgo(agent.lastActive)}</span>
-            </div>
-          </Link>
+          <AgentCard key={agent.id} agent={agent} username={username} />
         ))}
 
         <Link

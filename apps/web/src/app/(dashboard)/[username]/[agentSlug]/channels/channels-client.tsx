@@ -8,6 +8,7 @@ import {
   Loader2,
   MessageSquare,
   Plug,
+  RefreshCw,
   Unplug,
   Wifi,
   WifiOff,
@@ -43,11 +44,19 @@ interface ChannelsClientProps {
   agentSlug: string;
 }
 
-type GatewayStatus = "checking" | "online" | "unreachable" | "not_deployed";
+type GatewayStatus =
+  | "checking"
+  | "online"
+  | "unreachable"
+  | "crashing"
+  | "not_deployed";
 
 function gatewayStatusDotColor(status: GatewayStatus): string {
   if (status === "online") {
     return "bg-green-500";
+  }
+  if (status === "crashing") {
+    return "bg-amber-500";
   }
   if (status === "unreachable") {
     return "bg-red-500";
@@ -64,6 +73,9 @@ function gatewayStatusLabel(status: GatewayStatus, checked: boolean): string {
   }
   if (status === "online") {
     return "Online";
+  }
+  if (status === "crashing") {
+    return "Crashing (502) — check Railway logs";
   }
   return "Unreachable";
 }
@@ -96,6 +108,7 @@ export function ChannelsClient({
   );
   const [gatewayStatus, setGatewayStatus] = useState<GatewayStatus>("checking");
   const [checked, setChecked] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   async function checkStatus() {
     setGatewayStatus("checking");
@@ -113,9 +126,13 @@ export function ChannelsClient({
             label: ch.label,
           }))
         );
-        setGatewayStatus(
-          data.gatewayStatus === "online" ? "online" : "unreachable"
-        );
+        if (data.gatewayStatus === "online") {
+          setGatewayStatus("online");
+        } else if (data.gatewayStatus === "crashing") {
+          setGatewayStatus("crashing");
+        } else {
+          setGatewayStatus("unreachable");
+        }
       } else {
         setGatewayStatus("unreachable");
       }
@@ -123,6 +140,21 @@ export function ChannelsClient({
       setGatewayStatus("unreachable");
     }
     setChecked(true);
+  }
+
+  async function refreshUrl() {
+    setRefreshing(true);
+    try {
+      const res = await api.api.agents({ id: agentId })["refresh-url"].post({});
+
+      if (res.status === 200 && res.data && "deploymentUrl" in res.data) {
+        // Re-check status with the updated URL
+        await checkStatus();
+      }
+    } catch {
+      // ignore
+    }
+    setRefreshing(false);
   }
 
   async function connectChannel(channelId: string) {
@@ -273,6 +305,23 @@ export function ChannelsClient({
           <span className="text-xs text-muted-foreground">
             Gateway: {gatewayStatusLabel(gatewayStatus, checked)}
           </span>
+          {(gatewayStatus === "unreachable" || gatewayStatus === "crashing") &&
+            checked && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-[10px]"
+                onClick={refreshUrl}
+                disabled={refreshing}
+              >
+                {refreshing ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="size-3" />
+                )}
+                Refresh URL
+              </Button>
+            )}
           {deploymentUrl && (
             <a
               href={deploymentUrl}
