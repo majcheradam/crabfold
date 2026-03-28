@@ -3,17 +3,18 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "build": "tsdown",
+    "build": "bun build --compile --minify-whitespace --minify-syntax --target bun --outfile server ./src/index.ts",
     "typecheck": "tsgo --noEmit",
-    "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
     "dev": "bun run --hot src/index.ts",
-    "start": "bun run dist/index.mjs"
+    "start": "./server"
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.53",
     "@crabfold/auth": "workspace:*",
     "@crabfold/db": "workspace:*",
     "@crabfold/env": "workspace:*",
     "@elysiajs/cors": "^1.4.1",
+    "ai": "^6.0.141",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
     "elysia": "^1.4.28",
@@ -22,7 +23,6 @@
   "devDependencies": {
     "@crabfold/config": "workspace:*",
     "@types/bun": "catalog:",
-    "tsdown": "^0.16.8",
     "typescript": "^5.9.3"
   }
 }
