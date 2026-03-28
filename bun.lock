@@ -49,10 +49,12 @@
         "@crabfold/auth": "workspace:*",
         "@crabfold/env": "workspace:*",
         "@crabfold/ui": "workspace:*",
+        "@elysiajs/eden": "^1.4.4",
         "@tanstack/react-form": "^1.28.5",
         "babel-plugin-react-compiler": "^1.0.0",
         "better-auth": "catalog:",
         "dotenv": "catalog:",
+        "elysia": "^1.4.28",
         "lucide-react": "catalog:",
         "next": "^16.2.1",
         "next-themes": "catalog:",
@@ -102,6 +104,19 @@
         "@crabfold/config": "workspace:*",
         "@types/pg": "^8.20.0",
         "drizzle-kit": "^0.31.10",
+        "typescript": "^5.9.3",
+      },
+    },
+    "packages/deploy": {
+      "name": "@crabfold/deploy",
+      "version": "0.0.0",
+      "dependencies": {
+        "@crabfold/db": "workspace:*",
+        "@crabfold/env": "workspace:*",
+      },
+      "devDependencies": {
+        "@crabfold/config": "workspace:*",
+        "@types/bun": "catalog:",
         "typescript": "^5.9.3",
       },
     },
@@ -262,6 +277,8 @@
 
     "@crabfold/db": ["@crabfold/db@workspace:packages/db"],
 
+    "@crabfold/deploy": ["@crabfold/deploy@workspace:packages/deploy"],
+
     "@crabfold/env": ["@crabfold/env@workspace:packages/env"],
 
     "@crabfold/ui": ["@crabfold/ui@workspace:packages/ui"],
@@ -273,6 +290,8 @@
     "@ecies/ciphers": ["@ecies/ciphers@0.2.5", "", { "peerDependencies": { "@noble/ciphers": "^1.0.0" } }, "sha512-GalEZH4JgOMHYYcYmVqnFirFsjZHeoGMDt9IxEnM9F7GRUUyUksJ7Ou53L83WHJq3RWKD3AcBpo0iQh0oMpf8A=="],
 
     "@elysiajs/cors": ["@elysiajs/cors@1.4.1", "", { "peerDependencies": { "elysia": ">= 1.4.0" } }, "sha512-lQfad+F3r4mNwsxRKbXyJB8Jg43oAOXjRwn7sKUL6bcOW3KjUqUimTS+woNpO97efpzjtDE0tEjGk9DTw8lqTQ=="],
+
+    "@elysiajs/eden": ["@elysiajs/eden@1.4.8", "", { "peerDependencies": { "elysia": ">=1.4.19" } }, "sha512-a7oct2kFa49tH+GawZtSUCZR2rQgucNYgGLz8alXUqb4IrU3PASA0T4zXJw4MhdV1Xb6vyiR7p7kkqJcVjgbkA=="],
 
     "@elysiajs/openapi": ["@elysiajs/openapi@1.4.14", "", { "peerDependencies": { "elysia": ">= 1.4.0" } }, "sha512-kWmJWdvP8/LwHwAJXSpz6xFfYUoyUyEPRimEYABuDU1rOnS27Da1u9T2jyU7frOopxKWV/wDfDxMP8z2xdCPJw=="],
 
