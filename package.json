@@ -48,6 +48,7 @@
     "lefthook": "^2.1.4",
     "oxfmt": "^0.42.0",
     "oxlint": "^1.57.0",
+    "server": "workspace:*",
     "turbo": "^2.8.21",
     "ultracite": "7.3.2"
   },
