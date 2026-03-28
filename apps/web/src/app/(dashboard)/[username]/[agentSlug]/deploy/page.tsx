@@ -1,7 +1,6 @@
-import { env } from "@crabfold/env/web";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { apiServer } from "@/lib/api-server";
 import { getSession } from "@/lib/auth-server";
 
 import { DeployClient } from "./deploy-client";
@@ -10,21 +9,12 @@ async function resolveAgentId(
   userId: string,
   agentSlug: string
 ): Promise<string | null> {
-  const cookieStore = await cookies();
-  const res = await fetch(
-    `${env.NEXT_PUBLIC_SERVER_URL}/api/agents?userId=${userId}`,
-    {
-      cache: "no-store",
-      headers: { cookie: cookieStore.toString() },
-    }
-  );
-  if (!res.ok) {
+  const api = await apiServer();
+  const { data, status } = await api.api.agents.get({ query: { userId } });
+  if (status !== 200 || !data || "error" in data) {
     return null;
   }
-  const data = await res.json();
-  const match = (data.agents ?? []).find(
-    (a: { slug: string }) => a.slug === agentSlug
-  );
+  const match = data.agents.find((a) => a.slug === agentSlug);
   return match?.id ?? null;
 }
 

@@ -1,13 +1,12 @@
-import { env } from "@crabfold/env/web";
 import { Separator } from "@crabfold/ui/components/separator";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@crabfold/ui/components/sidebar";
-import { cookies } from "next/headers";
 
 import { AppSidebar } from "@/components/app-sidebar";
+import { apiServer } from "@/lib/api-server";
 import { getSession } from "@/lib/auth-server";
 
 interface SidebarAgent {
@@ -16,19 +15,12 @@ interface SidebarAgent {
 }
 
 async function fetchSidebarAgents(userId: string): Promise<SidebarAgent[]> {
-  const cookieStore = await cookies();
-  const res = await fetch(
-    `${env.NEXT_PUBLIC_SERVER_URL}/api/agents?userId=${userId}`,
-    {
-      cache: "no-store",
-      headers: { cookie: cookieStore.toString() },
-    }
-  );
-  if (!res.ok) {
+  const api = await apiServer();
+  const { data, status } = await api.api.agents.get({ query: { userId } });
+  if (status !== 200 || !data || "error" in data) {
     return [];
   }
-  const data = await res.json();
-  return (data.agents ?? []).map((a: { slug: string; name: string }) => ({
+  return data.agents.map((a) => ({
     name: a.name,
     slug: a.slug,
   }));

@@ -1,21 +1,9 @@
-import { env } from "@crabfold/env/web";
 import { Plus } from "lucide-react";
-import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { apiServer } from "@/lib/api-server";
 import { getSession } from "@/lib/auth-server";
-
-interface DashboardAgent {
-  id: string;
-  slug: string;
-  name: string;
-  fork: string;
-  status: string;
-  health: string | null;
-  threadCount: number;
-  lastActive: string;
-}
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -34,22 +22,13 @@ function timeAgo(iso: string): string {
   return `${days}d ago`;
 }
 
-async function fetchAgents(userId: string): Promise<DashboardAgent[]> {
-  const cookieStore = await cookies();
-  const res = await fetch(
-    `${env.NEXT_PUBLIC_SERVER_URL}/api/agents?userId=${userId}`,
-    {
-      cache: "no-store",
-      headers: { cookie: cookieStore.toString() },
-    }
-  );
-
-  if (!res.ok) {
+async function fetchAgents(userId: string) {
+  const api = await apiServer();
+  const { data, status } = await api.api.agents.get({ query: { userId } });
+  if (status !== 200 || !data || "error" in data) {
     return [];
   }
-
-  const data = await res.json();
-  return data.agents ?? [];
+  return data.agents;
 }
 
 export default async function DashboardPage({
