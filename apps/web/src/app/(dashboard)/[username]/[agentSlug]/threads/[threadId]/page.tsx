@@ -2,16 +2,7 @@
 
 import { Button } from "@crabfold/ui/components/button";
 import { Input } from "@crabfold/ui/components/input";
-import {
-  ArrowLeft,
-  BotIcon,
-  Pause,
-  Play,
-  Send,
-  Square,
-  User,
-} from "lucide-react";
-import Link from "next/link";
+import { BotIcon, Pause, Play, Send, Square, User } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useRef, useState } from "react";
 
@@ -194,12 +185,6 @@ export default function ThreadDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-3">
-          <Link href={`/${params.username}/${params.agentSlug}/threads`}>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <ArrowLeft className="size-3" />
-              Back
-            </Button>
-          </Link>
           <div className="flex flex-col gap-0.5">
             <span className="text-xs font-medium text-foreground">
               {params.threadId}

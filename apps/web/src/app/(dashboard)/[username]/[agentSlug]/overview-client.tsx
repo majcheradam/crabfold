@@ -7,6 +7,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { SpoolIcon } from "@/components/icons/spool";
+
 interface Agent {
   id: string;
   slug: string;
@@ -83,6 +85,12 @@ export function OverviewClient({ agent, username }: OverviewClientProps) {
           </span>
         </div>
         <div className="flex gap-1.5">
+          <Link href={`/${username}/${agent.slug}/threads`}>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <SpoolIcon className="size-3" />
+              Sessions
+            </Button>
+          </Link>
           <Link href={`/${username}/${agent.slug}/editor`}>
             <Button variant="outline" size="sm" className="gap-1.5">
               <Settings className="size-3" />

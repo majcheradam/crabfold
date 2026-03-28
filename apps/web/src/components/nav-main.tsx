@@ -19,6 +19,9 @@ export function NavMain({
   }[];
 }) {
   const pathname = usePathname();
+  const segments = pathname.split("/");
+  // pathname is /{username}/{agentSlug}/... — the agent slug is the 3rd segment
+  const activeSlug = segments[2] ?? "";
 
   return (
     <SidebarGroup>
@@ -28,9 +31,7 @@ export function NavMain({
             <SidebarMenuButton
               render={<Link href={item.url} />}
               tooltip={item.title}
-              isActive={
-                pathname === item.url || pathname.startsWith(`${item.url}/`)
-              }
+              isActive={activeSlug === item.title}
             >
               {item.icon}
               <span>{item.title}</span>

@@ -13,7 +13,7 @@ const TEMPLATES = [
       "Full-featured agent framework with Gateway, Brain, Memory, Skills, and Heartbeat architecture.",
     features: ["ReAct loop", "50+ channels", "Skill marketplace"],
     framework: "openclaw" as const,
-    image: "/openclaw.png",
+    image: "/openclaw.svg",
     name: "OpenClaw",
     prompt: "A full-featured autonomous agent using the OpenClaw framework",
   },
@@ -49,7 +49,7 @@ export function Hero({ onSubmit }: { onSubmit: (value: string) => void }) {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4">
-      <div className="flex w-full max-w-4xl flex-col items-center gap-12">
+      <div className="flex w-full max-w-4xl flex-col items-center gap-16">
         {/* Tagline */}
         <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl text-center">
           Describe your agent.
@@ -122,7 +122,7 @@ export function Hero({ onSubmit }: { onSubmit: (value: string) => void }) {
                   <img
                     src={tpl.image}
                     alt={tpl.name}
-                    className="size-full object-cover"
+                    className="size-full object-contain p-6"
                   />
                 </div>
                 <div className="flex flex-col gap-2 p-4">
