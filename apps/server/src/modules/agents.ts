@@ -58,8 +58,8 @@ export const agentsModule = new Elysia({ prefix: "/api/agents" })
             step: "files",
           });
 
-          const slug = slugify(prompt.slice(0, 48));
           const id = randomUUIDv7();
+          const slug = `${slugify(prompt.slice(0, 48))}-${id.slice(0, 6)}`;
 
           await withUser(user.id, (tx) =>
             tx.insert(agent).values({

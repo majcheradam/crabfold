@@ -57,7 +57,7 @@ export function MetricsClient({
           <div className="flex flex-col">
             {filtered.map((agent) => (
               <Link
-                key={agent.slug}
+                key={agent.id}
                 href={`/${username}/${agent.slug}/metrics`}
                 onMouseEnter={() => setSelected(agent.slug)}
                 onMouseLeave={() => setSelected(null)}

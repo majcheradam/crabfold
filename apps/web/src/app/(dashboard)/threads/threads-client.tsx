@@ -55,7 +55,7 @@ export function ThreadsClient({
           <div className="flex flex-col">
             {filtered.map((agent) => (
               <Link
-                key={agent.slug}
+                key={agent.id}
                 href={`/${username}/${agent.slug}/threads`}
                 onMouseEnter={() => setSelected(agent.slug)}
                 onMouseLeave={() => setSelected(null)}
