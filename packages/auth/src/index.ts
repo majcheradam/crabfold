@@ -21,11 +21,14 @@ export function createAuth() {
 
       schema: schema,
     }),
-    emailAndPassword: {
-      enabled: true,
-    },
     plugins: [],
     secret: env.BETTER_AUTH_SECRET,
+    socialProviders: {
+      github: {
+        clientId: env.GITHUB_CLIENT_ID,
+        clientSecret: env.GITHUB_CLIENT_SECRET,
+      },
+    },
     trustedOrigins: [env.CORS_ORIGIN],
   });
 }
