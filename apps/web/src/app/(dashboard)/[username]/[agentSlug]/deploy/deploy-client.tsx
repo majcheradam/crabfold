@@ -12,7 +12,6 @@ import { authClient } from "@/lib/auth-client";
 type DeployState =
   | { status: "idle" }
   | { status: "deploying" }
-  | { status: "github_required" }
   | { status: "error"; message: string }
   | { status: "complete"; url?: string };
 
@@ -28,6 +27,79 @@ interface DeployClientProps {
   username: string;
   agentSlug: string;
   autoRetry: boolean;
+  connections: { railway: boolean; github: boolean };
+}
+
+function IdleView({
+  connections,
+  onConnectRailway,
+  onDeploy,
+  canDeploy,
+}: {
+  connections: { railway: boolean; github: boolean };
+  onConnectRailway: () => void;
+  onDeploy: () => void;
+  canDeploy: boolean;
+}) {
+  if (!connections.railway) {
+    return (
+      <div className="flex flex-col items-center gap-4 text-center">
+        <Rocket className="size-8 text-muted-foreground" />
+        <h2 className="text-sm font-semibold text-foreground">
+          Connect Railway
+        </h2>
+        <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
+          To deploy your agent, connect your Railway account first. You will be
+          redirected to Railway to authorize access.
+        </p>
+        <Button size="lg" className="gap-1.5" onClick={onConnectRailway}>
+          <Rocket className="size-3.5" />
+          Connect Railway
+        </Button>
+      </div>
+    );
+  }
+
+  if (!connections.github) {
+    return (
+      <div className="flex w-full max-w-md flex-col gap-5 border border-border bg-card p-6">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <AlertTriangle className="size-8 text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-foreground">
+            GitHub token missing
+          </h2>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Your GitHub account is connected but the access token is missing.
+            Try signing out and signing in again with GitHub.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex flex-col items-center gap-3 text-center">
+        <Rocket className="size-8 text-muted-foreground" />
+        <h2 className="text-sm font-semibold text-foreground">
+          Deploy to Railway
+        </h2>
+        <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
+          Crabfold will create a GitHub repo, provision Railway infrastructure,
+          and deploy your agent automatically.
+        </p>
+      </div>
+      <Button
+        size="lg"
+        className="gap-1.5"
+        onClick={onDeploy}
+        disabled={!canDeploy}
+      >
+        <Rocket className="size-3.5" />
+        Deploy
+      </Button>
+    </>
+  );
 }
 
 export function DeployClient({
@@ -35,16 +107,19 @@ export function DeployClient({
   username,
   agentSlug,
   autoRetry,
+  connections,
 }: DeployClientProps) {
   const [state, setState] = useState<DeployState>(
-    autoRetry && agentId ? { status: "deploying" } : { status: "idle" }
+    autoRetry && agentId && connections.railway && connections.github
+      ? { status: "deploying" }
+      : { status: "idle" }
   );
   const [events, setEvents] = useState<DeployEvent[]>([]);
   const deployStarted = useRef(false);
 
-  function redirectToRailwayOAuth() {
+  function connectRailway() {
     const callbackURL = `${window.location.origin}/${username}/${agentSlug}/deploy?autoRetry=true`;
-    authClient.signIn.social({
+    authClient.linkSocial({
       callbackURL,
       provider: "railway" as "github",
     });
@@ -63,11 +138,15 @@ export function DeployClient({
           ? (body as { code: string }).code
           : null;
       if (code === "RAILWAY_NOT_CONNECTED") {
-        redirectToRailwayOAuth();
+        connectRailway();
         return;
       }
       if (code === "GITHUB_NOT_CONNECTED") {
-        setState({ status: "github_required" });
+        setState({
+          message:
+            "GitHub token missing. Try signing out and back in with GitHub.",
+          status: "error",
+        });
         return;
       }
       setState({ message: "Forbidden", status: "error" });
@@ -125,70 +204,29 @@ export function DeployClient({
     });
   }
 
-  // Auto-retry on mount
-  if (autoRetry && agentId && !deployStarted.current) {
+  // Auto-deploy after Railway OAuth callback
+  if (
+    autoRetry &&
+    agentId &&
+    connections.railway &&
+    connections.github &&
+    !deployStarted.current
+  ) {
     deployStarted.current = true;
-    startDeploy(agentId);
-  }
-
-  function handleDeploy() {
-    if (!agentId) {
-      return;
-    }
     startDeploy(agentId);
   }
 
   return (
     <div className="flex flex-col items-center justify-center gap-6 py-20">
-      {/* Idle state */}
       {state.status === "idle" && (
-        <>
-          <div className="flex flex-col items-center gap-3 text-center">
-            <Rocket className="size-8 text-muted-foreground" />
-            <h2 className="text-sm font-semibold text-foreground">
-              Deploy to Railway
-            </h2>
-            <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
-              Crabfold will create a GitHub repo, provision Railway
-              infrastructure, and deploy your agent automatically.
-            </p>
-          </div>
-          <Button
-            size="lg"
-            className="gap-1.5"
-            onClick={handleDeploy}
-            disabled={!agentId}
-          >
-            <Rocket className="size-3.5" />
-            Deploy
-          </Button>
-        </>
+        <IdleView
+          connections={connections}
+          onConnectRailway={connectRailway}
+          onDeploy={() => agentId && startDeploy(agentId)}
+          canDeploy={!!agentId}
+        />
       )}
 
-      {/* GitHub not connected */}
-      {state.status === "github_required" && (
-        <div className="flex w-full max-w-md flex-col gap-5 border border-border bg-card p-6">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <AlertTriangle className="size-8 text-muted-foreground" />
-            <h2 className="text-sm font-semibold text-foreground">
-              GitHub token missing
-            </h2>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              Your GitHub account is connected but the access token is missing.
-              Try signing out and signing in again with GitHub.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => setState({ status: "idle" })}
-          >
-            Back
-          </button>
-        </div>
-      )}
-
-      {/* Deploying — SSE progress */}
       {state.status === "deploying" && (
         <div className="flex w-full max-w-md flex-col gap-4">
           <div className="flex items-center gap-2">
@@ -224,7 +262,6 @@ export function DeployClient({
         </div>
       )}
 
-      {/* Complete */}
       {state.status === "complete" && (
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="flex size-10 items-center justify-center border border-green-500/20 bg-green-500/10">
@@ -254,7 +291,6 @@ export function DeployClient({
         </div>
       )}
 
-      {/* Error */}
       {state.status === "error" && (
         <div className="flex flex-col items-center gap-3 text-center">
           <AlertTriangle className="size-8 text-destructive" />

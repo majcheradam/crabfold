@@ -65,7 +65,7 @@ export async function deployToRailway(
   emit: EmitFn,
   deps: DeployDeps
 ): Promise<void> {
-  const slug = `crabfold-${config.agentSlug}`;
+  const slug = `crabfold-${config.agentSlug}`.slice(0, 32);
   const { github, railway } = deps;
   const pollIntervalMs = deps.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
 

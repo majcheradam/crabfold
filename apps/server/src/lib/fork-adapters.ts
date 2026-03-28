@@ -89,7 +89,8 @@ function generateNanobotFiles(config: AgentConfig, soul: string): AgentFile[] {
     },
     {
       content: [
-        `import { Nanobot } from "nanobot";`,
+        `import pkg from "nanobot";`,
+        `const { Nanobot } = pkg;`,
         ``,
         `const bot = new Nanobot({`,
         `  soul: "./SOUL.md",`,

@@ -18,6 +18,18 @@ async function resolveAgentId(
   return match?.id ?? null;
 }
 
+async function checkConnections(agentId: string): Promise<{
+  railway: boolean;
+  github: boolean;
+}> {
+  const api = await apiServer();
+  const { data, status } = await api.api.agents({ id: agentId }).deploy.get();
+  if (status !== 200 || !data || "error" in data) {
+    return { github: false, railway: false };
+  }
+  return { github: data.github, railway: data.railway };
+}
+
 export default async function DeployPage({
   params,
   searchParams,
@@ -35,12 +47,17 @@ export default async function DeployPage({
 
   const agentId = await resolveAgentId(session.user.id, agentSlug);
 
+  const connections = agentId
+    ? await checkConnections(agentId)
+    : { github: false, railway: false };
+
   return (
     <DeployClient
       agentId={agentId}
       username={username}
       agentSlug={agentSlug}
       autoRetry={autoRetry === "true"}
+      connections={connections}
     />
   );
 }

@@ -33,21 +33,54 @@ export async function createRepo(
   name: string,
   description: string
 ): Promise<{ defaultBranch: string; fullName: string; repoUrl: string }> {
-  const data = await githubApi<{
-    default_branch: string;
-    full_name: string;
-    html_url: string;
-  }>({
-    body: {
+  const res = await fetch(`${GITHUB_API}/user/repos`, {
+    body: JSON.stringify({
       auto_init: true,
       description,
       name,
       private: false,
+    }),
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "X-GitHub-Api-Version": "2022-11-28",
     },
     method: "POST",
-    path: "/user/repos",
-    token,
   });
+
+  if (res.status === 422) {
+    // Repo already exists — fetch it instead
+    const user = await githubApi<{ login: string }>({
+      method: "GET",
+      path: "/user",
+      token,
+    });
+    const existing = await githubApi<{
+      default_branch: string;
+      full_name: string;
+      html_url: string;
+    }>({
+      method: "GET",
+      path: `/repos/${user.login}/${name}`,
+      token,
+    });
+    return {
+      defaultBranch: existing.default_branch,
+      fullName: existing.full_name,
+      repoUrl: existing.html_url,
+    };
+  }
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`GitHub API error (${res.status}): ${text}`);
+  }
+
+  const data = (await res.json()) as {
+    default_branch: string;
+    full_name: string;
+    html_url: string;
+  };
 
   return {
     defaultBranch: data.default_branch,
@@ -129,7 +162,7 @@ export async function pushFiles(
   });
 
   await githubApi({
-    body: { sha: newCommit.sha },
+    body: { force: true, sha: newCommit.sha },
     method: "PATCH",
     path: `/repos/${fullName}/git/refs/heads/${branch}`,
     token,

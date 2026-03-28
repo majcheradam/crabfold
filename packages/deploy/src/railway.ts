@@ -39,10 +39,27 @@ async function railwayGql<T>(options: RailwayRequestOptions): Promise<T> {
   return json.data;
 }
 
+export async function getWorkspaceId(token: string): Promise<string> {
+  const data = await railwayGql<{
+    me: { workspaces: { id: string }[] };
+  }>({
+    query: `query { me { workspaces { id } } }`,
+    token,
+  });
+
+  const [workspace] = data.me.workspaces;
+  if (!workspace) {
+    throw new Error("No Railway workspace found for this account");
+  }
+  return workspace.id;
+}
+
 export async function createProject(
   token: string,
   name: string
 ): Promise<{ environmentId: string; projectId: string }> {
+  const workspaceId = await getWorkspaceId(token);
+
   const data = await railwayGql<{
     projectCreate: {
       environments: { edges: { node: { id: string } }[] };
@@ -50,8 +67,8 @@ export async function createProject(
     };
   }>({
     query: `
-      mutation($name: String!) {
-        projectCreate(input: { name: $name }) {
+      mutation($name: String!, $workspaceId: String!) {
+        projectCreate(input: { name: $name, workspaceId: $workspaceId }) {
           id
           environments {
             edges { node { id } }
@@ -60,7 +77,7 @@ export async function createProject(
       }
     `,
     token,
-    variables: { name },
+    variables: { name, workspaceId },
   });
 
   const project = data.projectCreate;
@@ -153,7 +170,7 @@ export async function createVolume(
   environmentId: string,
   serviceId: string,
   mountPath: string,
-  sizeMb: number
+  _sizeMb?: number
 ): Promise<{ volumeId: string }> {
   const data = await railwayGql<{
     volumeCreate: { id: string };
@@ -163,22 +180,20 @@ export async function createVolume(
         $projectId: String!,
         $environmentId: String!,
         $serviceId: String!,
-        $mountPath: String!,
-        $sizeMb: Int!
+        $mountPath: String!
       ) {
         volumeCreate(input: {
           projectId: $projectId,
           environmentId: $environmentId,
           serviceId: $serviceId,
-          mountPath: $mountPath,
-          sizeMb: $sizeMb
+          mountPath: $mountPath
         }) {
           id
         }
       }
     `,
     token,
-    variables: { environmentId, mountPath, projectId, serviceId, sizeMb },
+    variables: { environmentId, mountPath, projectId, serviceId },
   });
 
   return { volumeId: data.volumeCreate.id };

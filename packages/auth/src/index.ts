@@ -9,6 +9,12 @@ export function createAuth() {
   const db = createDb();
 
   return betterAuth({
+    account: {
+      accountLinking: {
+        enabled: true,
+        trustedProviders: ["railway", "github"],
+      },
+    },
     baseURL: env.BETTER_AUTH_URL,
     database: drizzleAdapter(db, {
       provider: "pg",
@@ -29,7 +35,12 @@ export function createAuth() {
         clientId: env.RAILWAY_CLIENT_ID,
         clientSecret: env.RAILWAY_CLIENT_SECRET,
         prompt: "consent",
-        scope: ["offline_access"],
+        scope: [
+          "openid",
+          "offline_access",
+          "workspace:admin",
+          "project:member",
+        ],
       },
     },
     trustedOrigins: [env.CORS_ORIGIN],

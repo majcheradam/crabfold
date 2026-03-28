@@ -64,67 +64,101 @@ function sseFromDeployEvent(event: DeploySSEEvent): JobEvent {
   };
 }
 
-export const deployModule = new Elysia({ prefix: "/api/agents" }).post(
-  "/:id/deploy",
-  async ({ params, request, set }) => {
-    const user = await getAuthedUser(request.headers);
-    if (!user) {
-      set.status = 401;
-      return { error: "Unauthorized" };
+export const deployModule = new Elysia({ prefix: "/api/agents" })
+  .get(
+    "/:id/deploy",
+    async ({ params, request, set }) => {
+      const user = await getAuthedUser(request.headers);
+      if (!user) {
+        set.status = 401;
+        return { error: "Unauthorized" };
+      }
+
+      const [row] = await db
+        .select({ id: agent.id })
+        .from(agent)
+        .where(and(eq(agent.id, params.id), eq(agent.userId, user.id)));
+
+      if (!row) {
+        set.status = 404;
+        return { error: "Not found" };
+      }
+
+      const [githubToken, railwayToken] = await Promise.all([
+        getOAuthToken(user.id, "github"),
+        getOAuthToken(user.id, "railway"),
+      ]);
+
+      return {
+        github: !!githubToken,
+        railway: !!railwayToken,
+      };
+    },
+    {
+      params: t.Object({ id: t.String() }),
     }
+  )
+  .post(
+    "/:id/deploy",
+    async ({ params, request, set }) => {
+      const user = await getAuthedUser(request.headers);
+      if (!user) {
+        set.status = 401;
+        return { error: "Unauthorized" };
+      }
 
-    // Verify the agent exists and belongs to this user
-    const [row] = await db
-      .select()
-      .from(agent)
-      .where(and(eq(agent.id, params.id), eq(agent.userId, user.id)));
+      // Verify the agent exists and belongs to this user
+      const [row] = await db
+        .select()
+        .from(agent)
+        .where(and(eq(agent.id, params.id), eq(agent.userId, user.id)));
 
-    if (!row) {
-      set.status = 404;
-      return { error: "Not found" };
+      if (!row) {
+        set.status = 404;
+        return { error: "Not found" };
+      }
+
+      // Retrieve OAuth tokens
+      const [githubToken, railwayToken] = await Promise.all([
+        getOAuthToken(user.id, "github"),
+        getOAuthToken(user.id, "railway"),
+      ]);
+
+      if (!railwayToken) {
+        set.status = 403;
+        return { code: "RAILWAY_NOT_CONNECTED" as const, error: "Forbidden" };
+      }
+
+      if (!githubToken) {
+        set.status = 403;
+        return { code: "GITHUB_NOT_CONNECTED" as const, error: "Forbidden" };
+      }
+
+      const jobId = createJob();
+
+      // Run real deploy pipeline in background
+      (async () => {
+        const deps = await createDefaultDeps();
+
+        await deployToRailway(
+          {
+            agentId: row.id,
+            agentName: row.name,
+            agentSlug: row.slug,
+            envVars: {},
+            files: row.files,
+            fork: row.fork,
+            skills: row.skills,
+          },
+          { githubToken, railwayToken },
+          (event) => emitJobEvent(jobId, sseFromDeployEvent(event)),
+          deps
+        );
+      })();
+
+      return { jobId };
+    },
+    {
+      params: t.Object({ id: t.String() }),
     }
-
-    // Retrieve OAuth tokens
-    const [githubToken, railwayToken] = await Promise.all([
-      getOAuthToken(user.id, "github"),
-      getOAuthToken(user.id, "railway"),
-    ]);
-
-    if (!railwayToken) {
-      set.status = 403;
-      return { code: "RAILWAY_NOT_CONNECTED" as const, error: "Forbidden" };
-    }
-
-    if (!githubToken) {
-      set.status = 403;
-      return { code: "GITHUB_NOT_CONNECTED" as const, error: "Forbidden" };
-    }
-
-    const jobId = createJob();
-
-    // Run real deploy pipeline in background
-    (async () => {
-      const deps = await createDefaultDeps();
-
-      await deployToRailway(
-        {
-          agentId: row.id,
-          agentName: row.name,
-          agentSlug: row.slug,
-          envVars: {},
-          files: row.files,
-          fork: row.fork,
-          skills: row.skills,
-        },
-        { githubToken, railwayToken },
-        (event) => emitJobEvent(jobId, sseFromDeployEvent(event)),
-        deps
-      );
-    })();
-
-    return { jobId };
-  },
-  {
-    params: t.Object({ id: t.String() }),
-  }
-);
+  );
