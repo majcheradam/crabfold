@@ -69,7 +69,8 @@ export function NavMain({
                       isActive={
                         (pathname === subItem.url ||
                           pathname.startsWith(`${subItem.url}/`)) &&
-                        !pathname.endsWith("/metrics")
+                        !pathname.includes("/metrics") &&
+                        !pathname.includes("/threads")
                       }
                     >
                       <span>{subItem.title}</span>
@@ -89,7 +90,7 @@ export function NavMain({
                 pathname === item.url ||
                 pathname.startsWith(`${item.url}/`) ||
                 (item.matchPattern
-                  ? pathname.endsWith(item.matchPattern)
+                  ? pathname.includes(item.matchPattern)
                   : false)
               }
             >

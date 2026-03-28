@@ -7,9 +7,10 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@crabfold/ui/components/sidebar";
-import { BotIcon, PlusIcon, TerminalIcon } from "lucide-react";
+import { ActivityIcon, BotIcon, PlusIcon, TerminalIcon } from "lucide-react";
 import Link from "next/link";
 
+import { SpoolIcon } from "@/components/icons/spool";
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
 
@@ -39,6 +40,21 @@ export function AppSidebar({ user, agents, ...props }: AppSidebarProps) {
     },
   ];
 
+  const navSingle = [
+    {
+      icon: <ActivityIcon />,
+      matchPattern: "/metrics",
+      title: "Observability",
+      url: "/metrics",
+    },
+    {
+      icon: <SpoolIcon />,
+      matchPattern: "/threads",
+      title: "Sessions",
+      url: "/threads",
+    },
+  ];
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -64,7 +80,7 @@ export function AppSidebar({ user, agents, ...props }: AppSidebarProps) {
             </span>
           </Link>
         </div>
-        <NavMain items={navMain} />
+        <NavMain items={navMain} extraItems={navSingle} />
       </SidebarContent>
       <SidebarFooter>
         {user && (
