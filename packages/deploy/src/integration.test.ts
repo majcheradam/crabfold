@@ -49,6 +49,7 @@ function createMockDeps(overrides?: {
       getDeploymentStatus: mock(() =>
         Promise.resolve({ status: "SUCCESS" as const })
       ),
+      getServiceDomains: mock(() => Promise.resolve([])),
       triggerDeploy: mock(() =>
         Promise.resolve({ deploymentId: "deploy-int" })
       ),

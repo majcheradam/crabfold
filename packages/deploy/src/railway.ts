@@ -246,33 +246,52 @@ export async function createDomain(
 
 export async function getServiceDomains(
   token: string,
-  projectId: string
+  projectId: string,
+  environmentId?: string,
+  serviceId?: string
 ): Promise<{ domain: string; serviceId: string }[]> {
-  const data = await railwayGql<{
-    project: {
-      services: {
-        edges: {
-          node: {
-            id: string;
-            serviceDomains: { domain: string }[];
-          };
-        }[];
+  // If we have both serviceId and environmentId, query directly
+  if (serviceId && environmentId) {
+    const data = await railwayGql<{
+      domains: {
+        serviceDomains: { domain: string }[];
       };
+    }>({
+      query: `
+        query($projectId: String!, $environmentId: String!, $serviceId: String!) {
+          domains(
+            projectId: $projectId
+            environmentId: $environmentId
+            serviceId: $serviceId
+          ) {
+            serviceDomains {
+              domain
+            }
+          }
+        }
+      `,
+      token,
+      variables: { environmentId, projectId, serviceId },
+    });
+
+    return (data.domains.serviceDomains ?? []).map((sd) => ({
+      domain: sd.domain,
+      serviceId,
+    }));
+  }
+
+  // Fallback: iterate over all services in the project
+  const servicesData = await railwayGql<{
+    project: {
+      environments: { edges: { node: { id: string } }[] };
+      services: { edges: { node: { id: string } }[] };
     };
   }>({
     query: `
       query($projectId: String!) {
         project(id: $projectId) {
-          services {
-            edges {
-              node {
-                id
-                serviceDomains {
-                  domain
-                }
-              }
-            }
-          }
+          services { edges { node { id } } }
+          environments { edges { node { id } } }
         }
       }
     `,
@@ -280,10 +299,39 @@ export async function getServiceDomains(
     variables: { projectId },
   });
 
+  const envId =
+    servicesData.project.environments.edges[0]?.node.id ?? undefined;
+  if (!envId) {
+    return [];
+  }
+
   const results: { domain: string; serviceId: string }[] = [];
-  for (const edge of data.project.services.edges) {
-    for (const sd of edge.node.serviceDomains) {
-      results.push({ domain: sd.domain, serviceId: edge.node.id });
+  for (const edge of servicesData.project.services.edges) {
+    const svcId = edge.node.id;
+    const data = await railwayGql<{
+      domains: {
+        serviceDomains: { domain: string }[];
+      };
+    }>({
+      query: `
+        query($projectId: String!, $environmentId: String!, $serviceId: String!) {
+          domains(
+            projectId: $projectId
+            environmentId: $environmentId
+            serviceId: $serviceId
+          ) {
+            serviceDomains {
+              domain
+            }
+          }
+        }
+      `,
+      token,
+      variables: { environmentId: envId, projectId, serviceId: svcId },
+    });
+
+    for (const sd of data.domains.serviceDomains ?? []) {
+      results.push({ domain: sd.domain, serviceId: svcId });
     }
   }
   return results;

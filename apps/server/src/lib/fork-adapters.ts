@@ -79,8 +79,9 @@ function generateOpenclawFiles(config: AgentConfig, soul: string): AgentFile[] {
           name: "crabfold-agent",
           private: true,
           scripts: {
-            // eslint-disable-next-line no-template-curly-in-string
-            start: "openclaw gateway --allow-unconfigured --port ${PORT:-3000}",
+            start:
+              // eslint-disable-next-line no-template-curly-in-string
+              "openclaw gateway --allow-unconfigured --host 0.0.0.0 --port ${PORT:-8080}",
           },
         },
         null,

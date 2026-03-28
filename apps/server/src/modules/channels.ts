@@ -72,18 +72,19 @@ async function probeGateway(deploymentUrl: string): Promise<ProbeResult> {
       const res = await fetch(`${deploymentUrl}${path}`, {
         signal: AbortSignal.timeout(10_000),
       });
+      // 502/503 = container is crashing
+      if (res.status === 502 || res.status === 503) {
+        return { httpStatus: res.status, status: "crashing" };
+      }
+      // Any other HTTP response means the server is up (even 404)
       if (res.ok) {
         const contentType = res.headers.get("Content-Type") ?? "";
         if (contentType.includes("application/json")) {
           const data = (await res.json()) as Record<string, unknown>;
           return { health: data, status: "online" };
         }
-        return { health: null, status: "online" };
       }
-      // 502/503 = container is crashing
-      if (res.status === 502 || res.status === 503) {
-        return { httpStatus: res.status, status: "crashing" };
-      }
+      return { health: null, status: "online" };
     } catch {
       // try next path
     }

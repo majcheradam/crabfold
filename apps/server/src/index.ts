@@ -6,6 +6,7 @@ import { Elysia } from "elysia";
 
 import { agentsModule } from "./modules/agents";
 import { apiKeysModule } from "./modules/api-keys";
+import { channelsModule } from "./modules/channels";
 import { connectorsModule } from "./modules/connectors";
 import { dashboardModule } from "./modules/dashboard";
 import { deployModule } from "./modules/deploy";
@@ -42,6 +43,7 @@ const app = new Elysia()
   .use(dashboardModule)
   .use(agentsModule)
   .use(deployModule)
+  .use(channelsModule)
   .use(apiKeysModule)
   .use(jobsModule)
   .use(threadsModule)

@@ -174,11 +174,11 @@ export async function deployToRailway(
     // Reuse existing domain if one exists, otherwise create a new one
     const existingDomains = await railway.getServiceDomains(
       tokens.railwayToken,
-      projectId
+      projectId,
+      environmentId,
+      serviceId
     );
-    const existingDomain = existingDomains.find(
-      (d) => d.serviceId === serviceId
-    );
+    const [existingDomain] = existingDomains;
     let domain = existingDomain?.domain;
     if (!domain) {
       const created = await railway.createDomain(

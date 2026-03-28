@@ -42,6 +42,7 @@ function createMockDeps(overrides?: Partial<DeployDeps>): DeployDeps {
       getDeploymentStatus: mock(() =>
         Promise.resolve({ status: "SUCCESS" as const })
       ),
+      getServiceDomains: mock(() => Promise.resolve([])),
       triggerDeploy: mock(() => Promise.resolve({ deploymentId: "deploy-1" })),
       upsertVariables: mock(() => Promise.resolve()),
       ...overrides?.railway,
