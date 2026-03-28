@@ -9,11 +9,25 @@ import { useCallback, useState } from "react";
 import { AudioVisualizer } from "@/components/audio-visualizer";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 
-const EXAMPLES = [
-  "A GitHub issue triager that labels and assigns incoming issues",
-  "A Slack bot that summarizes daily standups every morning",
-  "A docs agent that answers questions from my Notion workspace",
-  "A monitoring agent that alerts me when my API latency spikes",
+const TEMPLATES = [
+  {
+    description:
+      "Full-featured agent framework with Gateway, Brain, Memory, Skills, and Heartbeat architecture.",
+    features: ["ReAct loop", "50+ channels", "Skill marketplace"],
+    framework: "openclaw" as const,
+    image: "/openclaw.png",
+    name: "OpenClaw",
+    prompt: "A full-featured autonomous agent using the OpenClaw framework",
+  },
+  {
+    description:
+      "Lightweight fork for single-purpose agents with minimal resource footprint.",
+    features: ["< 50MB image", "Fast cold start", "Edge deploy"],
+    framework: "nanobot" as const,
+    image: "/nanobot.png",
+    name: "Nanobot",
+    prompt: "A lightweight single-purpose agent using the Nanobot framework",
+  },
 ];
 
 export default function Home() {
@@ -55,7 +69,7 @@ export default function Home() {
 
       {/* Hero + prompt */}
       <main className="flex flex-1 flex-col items-center justify-center px-4">
-        <div className="flex w-full max-w-2xl flex-col items-center gap-10">
+        <div className="flex w-full max-w-4xl flex-col items-center gap-10">
           <div className="flex flex-col items-center gap-4 text-center">
             <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
               Describe your agent.
@@ -122,20 +136,44 @@ export default function Home() {
             </div>
           </form>
 
-          {/* Examples */}
-          <div className="flex flex-col gap-2 self-start">
-            <span className="text-xs text-muted-foreground/60">
-              Try an example
+          {/* Templates */}
+          <div className="flex w-full flex-col gap-5">
+            <span className="text-lg font-semibold text-foreground">
+              Start with a template
             </span>
-            <div className="flex flex-wrap gap-1.5">
-              {EXAMPLES.map((example) => (
+            <div className="grid w-full gap-4 sm:grid-cols-2">
+              {TEMPLATES.map((tpl) => (
                 <button
-                  key={example}
+                  key={tpl.framework}
                   type="button"
-                  onClick={() => setValue(example)}
-                  className="border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+                  onClick={() => handleSubmit(tpl.prompt)}
+                  className="group flex flex-col overflow-hidden border border-border text-left transition-colors hover:border-foreground/20"
                 >
-                  {example}
+                  <div className="h-48 w-full shrink-0 bg-muted">
+                    <img
+                      src={tpl.image}
+                      alt={tpl.name}
+                      className="size-full object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2 p-4">
+                    <span className="text-sm font-medium text-foreground">
+                      {tpl.name}
+                    </span>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      {tpl.description}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {tpl.features.map((f) => (
+                        <span
+                          key={f}
+                          className="border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground/70"
+                        >
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </button>
               ))}
             </div>

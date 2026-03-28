@@ -7,10 +7,9 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@crabfold/ui/components/sidebar";
-import { ActivityIcon, BotIcon, PlusIcon, TerminalIcon } from "lucide-react";
+import { BotIcon, PlusIcon, TerminalIcon } from "lucide-react";
 import Link from "next/link";
 
-import { SpoolIcon } from "@/components/icons/spool";
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
 
@@ -27,33 +26,11 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 export function AppSidebar({ user, agents, ...props }: AppSidebarProps) {
   const username = user?.name ?? "";
 
-  const navMain = [
-    {
-      icon: <BotIcon />,
-      isActive: true,
-      items: agents.map((a) => ({
-        title: a.slug,
-        url: `/${username}/${a.slug}`,
-      })),
-      title: "Agents",
-      url: `/${username}`,
-    },
-  ];
-
-  const navSingle = [
-    {
-      icon: <ActivityIcon />,
-      matchPattern: "/metrics",
-      title: "Observability",
-      url: "/metrics",
-    },
-    {
-      icon: <SpoolIcon />,
-      matchPattern: "/threads",
-      title: "Sessions",
-      url: "/threads",
-    },
-  ];
+  const navItems = agents.map((a) => ({
+    icon: <BotIcon />,
+    title: a.slug,
+    url: `/${username}/${a.slug}`,
+  }));
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -80,7 +57,7 @@ export function AppSidebar({ user, agents, ...props }: AppSidebarProps) {
             </span>
           </Link>
         </div>
-        <NavMain items={navMain} extraItems={navSingle} />
+        <NavMain items={navItems} />
       </SidebarContent>
       <SidebarFooter>
         {user && (

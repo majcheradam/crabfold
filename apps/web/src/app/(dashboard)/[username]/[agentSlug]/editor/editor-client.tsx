@@ -12,9 +12,15 @@ import { api } from "@/lib/api-client";
 import type { Framework, Skill, WorkspaceFile } from "@/lib/types";
 
 function saveButtonLabel(state: string): string {
-  if (state === "saving") {return "Saving...";}
-  if (state === "saved") {return "Saved";}
-  if (state === "error") {return "Save failed -- retry";}
+  if (state === "saving") {
+    return "Saving...";
+  }
+  if (state === "saved") {
+    return "Saved";
+  }
+  if (state === "error") {
+    return "Save failed -- retry";
+  }
   return "Save changes";
 }
 

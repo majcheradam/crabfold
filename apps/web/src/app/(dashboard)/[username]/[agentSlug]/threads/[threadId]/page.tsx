@@ -125,16 +125,22 @@ const MOCK_MESSAGES: Record<string, Message[]> = {
 };
 
 const avatarClass = (role: Message["role"]) => {
-  if (role === "agent") {return "border-border text-muted-foreground";}
-  if (role === "human")
-    {return "border-foreground bg-foreground text-background";}
+  if (role === "agent") {
+    return "border-border text-muted-foreground";
+  }
+  if (role === "human") {
+    return "border-foreground bg-foreground text-background";
+  }
   return "border-border text-muted-foreground/50";
 };
 
 const bubbleClass = (role: Message["role"]) => {
-  if (role === "system") {return "italic text-muted-foreground/60";}
-  if (role === "human")
-    {return "border border-foreground bg-foreground/5 p-3 text-foreground";}
+  if (role === "system") {
+    return "italic text-muted-foreground/60";
+  }
+  if (role === "human") {
+    return "border border-foreground bg-foreground/5 p-3 text-foreground";
+  }
   return "border border-border p-3 text-foreground";
 };
 

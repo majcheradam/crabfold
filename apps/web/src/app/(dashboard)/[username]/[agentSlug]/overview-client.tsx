@@ -2,16 +2,7 @@
 
 import { Button } from "@crabfold/ui/components/button";
 import { Input } from "@crabfold/ui/components/input";
-import {
-  Copy,
-  Check,
-  Download,
-  GitBranch,
-  Rocket,
-  RotateCcw,
-  Settings,
-  Trash2,
-} from "lucide-react";
+import { Download, Rocket, RotateCcw, Settings, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -58,24 +49,8 @@ const statusLabels: Record<string, string> = {
 
 export function OverviewClient({ agent, username }: OverviewClientProps) {
   const router = useRouter();
-  const [copied, setCopied] = useState(false);
-  const [configCopied, setConfigCopied] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
-
-  const handleCopyClone = () => {
-    navigator.clipboard.writeText(
-      `npx crabfold clone ${agent.slug} ./my-agent`
-    );
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleCopyConfig = () => {
-    navigator.clipboard.writeText(JSON.stringify(agent.config, null, 2));
-    setConfigCopied(true);
-    setTimeout(() => setConfigCopied(false), 2000);
-  };
 
   const handleRebuild = () => {
     router.push(
@@ -94,9 +69,6 @@ export function OverviewClient({ agent, username }: OverviewClientProps) {
 
   const skillsDisplay =
     agent.skills.length > 0 ? agent.skills.join(", ") : "None";
-
-  const soulPreview =
-    agent.soul.length > 500 ? `${agent.soul.slice(0, 500)}...` : agent.soul;
 
   return (
     <div className="flex flex-col gap-6">
@@ -169,36 +141,8 @@ export function OverviewClient({ agent, username }: OverviewClientProps) {
         </div>
       </div>
 
-      {/* SOUL.md preview */}
-      {agent.soul && (
-        <div className="flex flex-col gap-2 border border-border p-4">
-          <h3 className="text-sm font-medium text-foreground">SOUL.md</h3>
-          <pre className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">
-            {soulPreview}
-          </pre>
-        </div>
-      )}
-
       {/* Export actions */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <button
-          type="button"
-          onClick={handleCopyConfig}
-          className="group flex flex-col gap-2 border border-border p-4 text-left transition-colors hover:border-foreground/20"
-        >
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-            {configCopied ? (
-              <Check className="size-3.5" />
-            ) : (
-              <Copy className="size-3.5" />
-            )}
-            {configCopied ? "Copied!" : "Copy config"}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Copy the full workspace config to your clipboard
-          </p>
-        </button>
-
+      <div className="grid gap-3 sm:grid-cols-2">
         <button
           type="button"
           className="group flex flex-col gap-2 border border-border p-4 text-left transition-colors hover:border-foreground/20"
@@ -223,21 +167,6 @@ export function OverviewClient({ agent, username }: OverviewClientProps) {
             </p>
           </div>
         </Link>
-      </div>
-
-      {/* Clone command */}
-      <div className="flex items-center gap-3 border border-border px-4 py-3">
-        <GitBranch className="size-3.5 text-muted-foreground" />
-        <code className="flex-1 font-mono text-xs text-muted-foreground">
-          npx crabfold clone {agent.slug} ./my-agent
-        </code>
-        <button
-          type="button"
-          onClick={handleCopyClone}
-          className="text-muted-foreground transition-colors hover:text-foreground"
-        >
-          {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
-        </button>
       </div>
 
       {/* Delete */}
