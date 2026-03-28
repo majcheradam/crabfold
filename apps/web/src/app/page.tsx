@@ -54,7 +54,7 @@ export default function Home() {
     <div className="flex min-h-svh flex-col">
       {/* Nav */}
       <header className="flex items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-2 text-muted-foreground">
+        <div className="flex items-center gap-2 text-foreground">
           <Terminal className="size-4" />
           <span className="text-xs font-medium uppercase tracking-widest">
             crabfold
@@ -68,7 +68,7 @@ export default function Home() {
       </header>
 
       {/* Hero + prompt */}
-      <main className="flex flex-1 flex-col items-center justify-center px-4">
+      <main className="flex flex-1 flex-col items-center justify-center px-4 pt-24">
         <div className="flex w-full max-w-4xl flex-col items-center gap-16">
           <div className="flex flex-col items-center gap-4 text-center">
             <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
