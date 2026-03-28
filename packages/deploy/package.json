@@ -1,0 +1,26 @@
+{
+  "name": "@crabfold/deploy",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@crabfold/db": "workspace:*",
+    "@crabfold/env": "workspace:*"
+  },
+  "devDependencies": {
+    "@crabfold/config": "workspace:*",
+    "@types/bun": "catalog:",
+    "typescript": "^5.9.3"
+  }
+}
