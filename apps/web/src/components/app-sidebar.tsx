@@ -52,10 +52,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        <div className="px-4 pt-4">
+        <div className="px-2 pt-4">
           <Link
             href="/new"
-            className="flex items-center gap-2 border border-border px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-foreground/5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2"
+            className="flex size-8 items-center justify-center border border-border text-xs font-medium text-foreground transition-[width,height,padding] hover:bg-foreground/5 group-data-[collapsible=icon]:size-8 group-not-data-[collapsible=icon]:h-auto group-not-data-[collapsible=icon]:w-full group-not-data-[collapsible=icon]:justify-start group-not-data-[collapsible=icon]:gap-2 group-not-data-[collapsible=icon]:px-3 group-not-data-[collapsible=icon]:py-2"
           >
             <PlusIcon className="size-3.5 shrink-0" />
             <span className="group-data-[collapsible=icon]:hidden">

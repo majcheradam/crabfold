@@ -52,7 +52,7 @@ export function NavUser({
             <ChevronsUpDownIcon className="ml-auto size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="min-w-56 rounded-lg"
+            className="min-w-56 rounded-none"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}

@@ -27,21 +27,24 @@ export default function AgentOverviewPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const agentDescription =
+    "A GitHub issue triager that labels and assigns incoming issues";
+
   const handleRebuild = () => {
-    router.push("/new");
+    router.push(`/new?prompt=${encodeURIComponent(agentDescription)}`);
   };
 
   return (
     <div className="flex flex-col gap-6">
       {/* Actions */}
       <div className="flex items-end justify-between">
-        <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
           <h2 className="text-sm font-semibold text-foreground">
-            Your agent is ready
+            {params.agentSlug}
           </h2>
-          <p className="text-xs text-muted-foreground">
-            A GitHub issue triager that labels and assigns incoming issues
-          </p>
+          <span className="border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            Draft
+          </span>
         </div>
         <div className="flex gap-1.5">
           <Link href={`/${params.username}/${params.agentSlug}/editor`}>

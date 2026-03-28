@@ -1,6 +1,8 @@
 "use client";
 
 import { Button } from "@crabfold/ui/components/button";
+import { ArrowLeft } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { FrameworkTile } from "@/components/landing/tiles/framework-tile";
@@ -103,6 +105,8 @@ for new issues and automatically triages them.
 ];
 
 export default function EditorPage() {
+  const router = useRouter();
+  const params = useParams<{ username: string; agentSlug: string }>();
   const [framework, setFramework] = useState<Framework>("openclaw");
   const [skills, setSkills] = useState<Skill[]>(INITIAL_SKILLS);
   const [files, setFiles] = useState<WorkspaceFile[]>(INITIAL_FILES);
@@ -121,6 +125,27 @@ export default function EditorPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Header */}
+      <div className="flex items-end justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-foreground">
+            {params.agentSlug}
+          </h2>
+          <span className="border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            Draft
+          </span>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.push(`/${params.username}/${params.agentSlug}`)}
+          className="gap-1.5"
+        >
+          <ArrowLeft className="size-3" />
+          Back
+        </Button>
+      </div>
+
       {/* Framework */}
       <FrameworkTile selected={framework} onSelect={setFramework} />
 
