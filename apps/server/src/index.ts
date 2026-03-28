@@ -6,11 +6,9 @@ import { Elysia } from "elysia";
 
 import { agentsModule } from "./modules/agents";
 import { connectorsModule } from "./modules/connectors";
-import { dashboardModule } from "./modules/dashboard";
 import { gatewayModule } from "./modules/gateway";
 import { jobsModule } from "./modules/jobs";
 import { observabilityModule } from "./modules/observability";
-import { threadsModule } from "./modules/threads";
 
 const betterAuth = new Elysia({ name: "better-auth" })
   .mount(auth.handler)
@@ -37,13 +35,11 @@ const app = new Elysia()
     })
   )
   .use(betterAuth)
-  .use(connectorsModule)
-  .use(dashboardModule)
-  .use(gatewayModule)
   .use(agentsModule)
   .use(jobsModule)
+  .use(connectorsModule)
+  .use(gatewayModule)
   .use(observabilityModule)
-  .use(threadsModule)
   .get("/", () => "OK", { detail: { hide: true } })
   .listen(3000);
 
