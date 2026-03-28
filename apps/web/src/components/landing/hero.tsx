@@ -1,8 +1,11 @@
 "use client";
 
 import { Button } from "@crabfold/ui/components/button";
-import { ArrowRight } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, Mic, MicOff } from "lucide-react";
+import { useCallback, useState } from "react";
+
+import { AudioVisualizer } from "@/components/audio-visualizer";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 
 const EXAMPLES = [
   "A GitHub issue triager that labels and assigns incoming issues",
@@ -13,6 +16,15 @@ const EXAMPLES = [
 
 export function Hero({ onSubmit }: { onSubmit: (value: string) => void }) {
   const [value, setValue] = useState("");
+  const handleVoiceResult = useCallback(
+    (text: string) => setValue((prev) => (prev ? `${prev} ${text}` : text)),
+    []
+  );
+  const {
+    recording,
+    stream,
+    toggle: toggleVoice,
+  } = useVoiceInput(handleVoiceResult);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +61,23 @@ export function Hero({ onSubmit }: { onSubmit: (value: string) => void }) {
               rows={3}
               className="w-full resize-none bg-transparent px-4 pt-4 pb-14 text-sm text-foreground outline-none placeholder:text-muted-foreground/50"
             />
-            <div className="absolute right-3 bottom-3">
+            <div className="absolute right-3 bottom-3 flex items-center gap-1.5">
+              {recording && <AudioVisualizer stream={stream} />}
+              <button
+                type="button"
+                onClick={toggleVoice}
+                className={`flex size-7 items-center justify-center border transition-colors ${
+                  recording
+                    ? "border-destructive bg-destructive/10 text-destructive"
+                    : "border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {recording ? (
+                  <MicOff className="size-3" />
+                ) : (
+                  <Mic className="size-3" />
+                )}
+              </button>
               <Button
                 type="submit"
                 size="sm"
