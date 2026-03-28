@@ -2,7 +2,17 @@
 
 import { Button } from "@crabfold/ui/components/button";
 import { Input } from "@crabfold/ui/components/input";
-import { Download, Rocket, RotateCcw, Settings, Trash2 } from "lucide-react";
+import {
+  Check,
+  Copy,
+  Download,
+  ExternalLink,
+  MessageSquare,
+  Rocket,
+  RotateCcw,
+  Settings,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -13,7 +23,7 @@ interface Agent {
   id: string;
   slug: string;
   name: string;
-  fork: "openclaw" | "nanobot" | "ironclaw";
+  fork: "openclaw" | "nanobot";
   status: "draft" | "deploying" | "live" | "error";
   soul: string;
   config: {
@@ -37,7 +47,6 @@ interface OverviewClientProps {
 }
 
 const forkLabels: Record<string, string> = {
-  ironclaw: "IronClaw",
   nanobot: "Nanobot",
   openclaw: "OpenClaw",
 };
@@ -80,9 +89,21 @@ export function OverviewClient({ agent, username }: OverviewClientProps) {
           <h2 className="text-sm font-semibold text-foreground">
             {agent.name}
           </h2>
-          <span className="border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
-            {statusLabels[agent.status] ?? agent.status}
-          </span>
+          {agent.status === "deploying" && agent.railwayProjectId ? (
+            <a
+              href={`https://railway.com/project/${agent.railwayProjectId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Deploying&hellip;
+              <ExternalLink className="size-2.5" />
+            </a>
+          ) : (
+            <span className="border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+              {statusLabels[agent.status] ?? agent.status}
+            </span>
+          )}
         </div>
         <div className="flex gap-1.5">
           <Link href={`/${username}/${agent.slug}/threads`}>
@@ -150,7 +171,25 @@ export function OverviewClient({ agent, username }: OverviewClientProps) {
       </div>
 
       {/* Export actions */}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <button
+          type="button"
+          onClick={handleCopyConfig}
+          className="group flex flex-col gap-2 border border-border p-4 text-left transition-colors hover:border-foreground/20"
+        >
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            {configCopied ? (
+              <Check className="size-3.5" />
+            ) : (
+              <Copy className="size-3.5" />
+            )}
+            {configCopied ? "Copied!" : "Copy config"}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Copy the full workspace config to your clipboard
+          </p>
+        </button>
+
         <button
           type="button"
           className="group flex flex-col gap-2 border border-border p-4 text-left transition-colors hover:border-foreground/20"
@@ -163,6 +202,18 @@ export function OverviewClient({ agent, username }: OverviewClientProps) {
             Download the full agent workspace as a ZIP archive
           </p>
         </button>
+
+        <Link href={`/${username}/${agent.slug}/channels`}>
+          <div className="group flex flex-col gap-2 border border-border p-4 text-left transition-colors hover:border-foreground/20">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <MessageSquare className="size-3.5" />
+              Channels
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Connect WhatsApp, Slack, Telegram and more
+            </p>
+          </div>
+        </Link>
 
         <Link href={`/${username}/${agent.slug}/deploy`}>
           <div className="group flex flex-col gap-2 border border-border bg-foreground p-4 text-left text-background transition-colors hover:bg-foreground/90">

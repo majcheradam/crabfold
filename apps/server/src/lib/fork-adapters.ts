@@ -23,6 +23,34 @@ function gatewayConfigTemplate(channels: AgentChannel[]): string {
   ].join("\n");
 }
 
+function openclawConfigTemplate(channels: AgentChannel[]): string {
+  const channelEntries: Record<string, { enabled: boolean }> = {};
+  for (const c of channels) {
+    channelEntries[c.id] = { enabled: true };
+  }
+  return JSON.stringify(
+    {
+      agents: {
+        defaults: {
+          model: { primary: "google/gemini-2.5-flash" },
+        },
+      },
+      auth: {
+        profiles: {
+          google: {
+            mode: "api_key",
+            provider: "google",
+          },
+        },
+      },
+      channels: channelEntries,
+      gateway: { mode: "local" },
+    },
+    null,
+    2
+  );
+}
+
 function dockerfileTemplate(base: string): string {
   return [
     `FROM ${base}`,
@@ -30,6 +58,8 @@ function dockerfileTemplate(base: string): string {
     `COPY package.json .`,
     `RUN npm install --production`,
     `COPY . .`,
+    `RUN mkdir -p /root/.openclaw && cp openclaw.json /root/.openclaw/openclaw.json`,
+    `RUN mkdir -p /root/.config/openclaw && cp openclaw.json /root/.config/openclaw/config.json`,
     `CMD ["npm", "start"]`,
   ].join("\n");
 }
@@ -39,122 +69,29 @@ function generateOpenclawFiles(config: AgentConfig, soul: string): AgentFile[] {
     { content: soul, path: "SOUL.md" },
     { content: gatewayConfigTemplate(config.channels), path: "openclaw.json5" },
     {
+      content: openclawConfigTemplate(config.channels),
+      path: "openclaw.json",
+    },
+    {
       content: JSON.stringify(
         {
           dependencies: { openclaw: "latest" },
           name: "crabfold-agent",
           private: true,
-          scripts: { start: "node index.js" },
-          type: "module",
+          scripts: {
+            // eslint-disable-next-line no-template-curly-in-string
+            start: "openclaw gateway --allow-unconfigured --port ${PORT:-3000}",
+          },
         },
         null,
         2
       ),
       path: "package.json",
-    },
-    {
-      content: [
-        `import { createAgent } from "openclaw";`,
-        ``,
-        `const agent = createAgent({`,
-        `  soul: "./SOUL.md",`,
-        `  skills: ${JSON.stringify(config.skills)},`,
-        `});`,
-        ``,
-        `agent.start();`,
-      ].join("\n"),
-      path: "index.js",
-    },
-    { content: dockerfileTemplate("node:22-alpine"), path: "Dockerfile" },
-  ];
-}
-
-function generateNanobotFiles(config: AgentConfig, soul: string): AgentFile[] {
-  return [
-    { content: soul, path: "SOUL.md" },
-    { content: gatewayConfigTemplate(config.channels), path: "openclaw.json5" },
-    {
-      content: JSON.stringify(
-        {
-          dependencies: { nanobot: "latest" },
-          name: "crabfold-agent",
-          private: true,
-          scripts: { start: "node index.js" },
-          type: "module",
-        },
-        null,
-        2
-      ),
-      path: "package.json",
-    },
-    {
-      content: [
-        `import pkg from "nanobot";`,
-        `const { Nanobot } = pkg;`,
-        ``,
-        `const bot = new Nanobot({`,
-        `  soul: "./SOUL.md",`,
-        `  memory: "./memory",`,
-        `  skills: ${JSON.stringify(config.skills)},`,
-        `});`,
-        ``,
-        `bot.start();`,
-      ].join("\n"),
-      path: "index.js",
-    },
-    { content: dockerfileTemplate("node:22-alpine"), path: "Dockerfile" },
-  ];
-}
-
-function generateIronclawFiles(config: AgentConfig, soul: string): AgentFile[] {
-  return [
-    { content: soul, path: "SOUL.md" },
-    { content: gatewayConfigTemplate(config.channels), path: "openclaw.json5" },
-    {
-      content: JSON.stringify(
-        {
-          dependencies: { ironclaw: "latest", pg: "^8.20.0" },
-          name: "crabfold-agent",
-          private: true,
-          scripts: { start: "node index.js" },
-          type: "module",
-        },
-        null,
-        2
-      ),
-      path: "package.json",
-    },
-    {
-      content: [
-        `import { Ironclaw } from "ironclaw";`,
-        ``,
-        `const agent = new Ironclaw({`,
-        `  soul: "./SOUL.md",`,
-        `  database: process.env.DATABASE_URL,`,
-        `  skills: ${JSON.stringify(config.skills)},`,
-        `});`,
-        ``,
-        `agent.start();`,
-      ].join("\n"),
-      path: "index.js",
     },
     { content: dockerfileTemplate("node:22-alpine"), path: "Dockerfile" },
   ];
 }
 
 export function generateFiles(config: AgentConfig, soul: string): AgentFile[] {
-  switch (config.fork) {
-    case "openclaw": {
-      return generateOpenclawFiles(config, soul);
-    }
-    case "nanobot": {
-      return generateNanobotFiles(config, soul);
-    }
-    case "ironclaw": {
-      return generateIronclawFiles(config, soul);
-    }
-    default: {
-      return generateOpenclawFiles(config, soul);
-    }
-  }
+  return generateOpenclawFiles(config, soul);
 }

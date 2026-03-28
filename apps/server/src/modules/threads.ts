@@ -127,20 +127,45 @@ export const threadsModule = new Elysia({ prefix: "/api/agents" })
 
       const wsUrl = `${row.deploymentUrl.replace(/^http/, "ws")}/ws/threads/${params.tid}`;
 
+      let ws: WebSocket | null = null;
+
       return new Response(
         new ReadableStream({
+          cancel() {
+            if (ws && ws.readyState <= WebSocket.OPEN) {
+              ws.close();
+            }
+          },
           start(controller) {
             const encoder = new TextEncoder();
+            let closed = false;
 
             const send = (event: string, data: unknown) => {
-              controller.enqueue(
-                encoder.encode(
-                  `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
-                )
-              );
+              if (closed) {
+                return;
+              }
+              try {
+                controller.enqueue(
+                  encoder.encode(
+                    `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
+                  )
+                );
+              } catch {
+                closed = true;
+              }
             };
 
-            let ws: WebSocket | null = null;
+            const close = () => {
+              if (closed) {
+                return;
+              }
+              closed = true;
+              try {
+                controller.close();
+              } catch {
+                // Already closed
+              }
+            };
 
             try {
               ws = new WebSocket(wsUrl);
@@ -186,16 +211,16 @@ export const threadsModule = new Elysia({ prefix: "/api/agents" })
 
               ws.addEventListener("close", () => {
                 send("disconnected", { reason: "agent_disconnected" });
-                controller.close();
+                close();
               });
 
               ws.addEventListener("error", () => {
                 send("error", { message: "WebSocket connection failed" });
-                controller.close();
+                close();
               });
             } catch {
               send("error", { message: "Failed to connect to agent" });
-              controller.close();
+              close();
             }
           },
         }),
