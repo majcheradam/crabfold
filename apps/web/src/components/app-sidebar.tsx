@@ -44,7 +44,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <Link href="/" className="flex items-center gap-2 px-2 py-1">
+        <Link href="/demo" className="flex items-center gap-2 px-2 py-1">
           <TerminalIcon className="size-4 text-foreground" />
           <span className="text-xs font-medium uppercase tracking-widest text-foreground group-data-[collapsible=icon]:hidden">
             crabfold
