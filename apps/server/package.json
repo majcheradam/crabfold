@@ -6,7 +6,10 @@
     "build": "bun build --compile --minify-whitespace --minify-syntax --target bun --outfile server ./src/index.ts",
     "typecheck": "tsgo --noEmit",
     "dev": "bun run --hot src/index.ts",
-    "start": "./server"
+    "start": "./server",
+    "test": "bun test src/",
+    "test:integration": "bun test test/",
+    "test:all": "bun test"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.53",

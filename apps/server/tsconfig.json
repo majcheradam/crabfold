@@ -10,5 +10,5 @@
     "jsx": "react-jsx",
     "strictNullChecks": true
   },
-  "exclude": ["test.ts", "test-dashboard.ts", "test-threads.ts"]
+  "exclude": ["test.ts", "test-*.ts", "test/**", "src/**/*.test.ts"]
 }
