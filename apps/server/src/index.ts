@@ -7,6 +7,7 @@ import { Elysia } from "elysia";
 import { agentsModule } from "./modules/agents";
 import { dashboardModule } from "./modules/dashboard";
 import { jobsModule } from "./modules/jobs";
+import { threadsModule } from "./modules/threads";
 
 const betterAuth = new Elysia({ name: "better-auth" })
   .mount(auth.handler)
@@ -36,6 +37,7 @@ const app = new Elysia()
   .use(dashboardModule)
   .use(agentsModule)
   .use(jobsModule)
+  .use(threadsModule)
   .get("/", () => "OK", { detail: { hide: true } })
   .listen(3000);
 

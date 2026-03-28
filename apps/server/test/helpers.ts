@@ -4,7 +4,7 @@ const BASE = "http://localhost:3000";
 
 export { BASE };
 
-export const authClient = createAuthClient({ baseURL: BASE });
+const authClient = createAuthClient({ baseURL: BASE });
 
 export function authedHeaders(cookie: string, json = true) {
   const h: Record<string, string> = { Cookie: cookie };
@@ -34,7 +34,7 @@ export async function getSessionCookie(
       onSuccess: (ctx) => {
         const setCookie = ctx.response.headers.get("set-cookie");
         if (setCookie) {
-          [sessionCookie] = setCookie.split(";");
+          sessionCookie = setCookie.split(";")[0] ?? "";
         }
       },
     },
@@ -48,7 +48,7 @@ export async function getSessionCookie(
   const sessionRes = await fetch(`${BASE}/api/auth/get-session`, {
     headers: { Cookie: sessionCookie },
   });
-  const sessionData = await sessionRes.json();
+  const sessionData = (await sessionRes.json()) as { user: { id: string } };
   const userId = sessionData.user.id;
 
   return { cookie: sessionCookie, userId };
@@ -67,7 +67,7 @@ export async function createAgent(
     headers: authedHeaders(cookie),
     method: "POST",
   });
-  const createData = await createRes.json();
+  const createData = (await createRes.json()) as { jobId?: string };
   if (!createData.jobId) {
     throw new Error("POST /create did not return jobId");
   }
